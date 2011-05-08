@@ -1,3 +1,5 @@
+package TemporalHClustering;
+
 /**
  * A class to store the result of a single iteration.
  */

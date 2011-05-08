@@ -1,10 +1,35 @@
+package TemporalHClustering;
+
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.util.ArrayList;
 import java.io.File;
 import java.awt.Point;
 
+/*
+ * Use LinkedHashMap<Integer, HashMap<String, double[]>> to represent data
+ * Use HashMap<String, Integer> to represent each isolates index in the correlation matrix
+ *
+ * Foreach day in LinkedHashMap
+ *    Cluster the isolates in the map for that day
+ *    use HashMap to ensure correct correlation is used between pyrograms
+ *
+ *    after each isolate has been clustered for this day then
+ *    cluster all clusters for this day with clusters from the previous day
+ *
+ * the day for a cluster will primarily determine the order in which it gets clustered overall
+ *
+ * the group of an isolate (f - fecal, i - immediate, l - later) determines a temporal
+ *  distance between isolates (proximity is important)
+ * the correlation between two isolates (may mirror, may not?) determine actual similarity
+ *
+ * when calculating distance between two clusters use euclidean distance between
+ * (1, x) where 1 is compared to the correlation for the two clusters and x is
+ * the distance between the two clusters' groups
+ *
+ */
 public class HClustering {
+   private Map<Integer, Map<String, double[]>> dataMapping = null;
    private ArrayList<ArrayList<Double>> distancesMatrix;
    private ArrayList<Cluster> clusters;
    private ArrayList<Dendogram> dendogram;
@@ -12,7 +37,6 @@ public class HClustering {
    private DistanceMeasure distanceMode = null;
    private IterationResult clusterResults;
    private File dataFile = null;
-   private final String relativeDir = "plotdata/HClustering/";
    private int tupleLength = 0;
    private double threshold;
 
@@ -38,6 +62,7 @@ public class HClustering {
          for (int distRow = 0; distRow < clusterer.clusters.size(); distRow++) {
             ArrayList<Double> distancesRow = new ArrayList<Double>();
 
+            //TODO continue here
             for (int distCol = 0; distCol < distRow; distCol++) {
                if (clusterer.distanceMode != null) {
                   distancesRow.add(clusterer.clusters.get(distRow).distance(
@@ -246,7 +271,7 @@ public class HClustering {
       return clusterSet;
    }
 
-   private void createInitialClusters() {
+   private void createInitialClusters(Map<String, Cluster> clusterMap) {
       //foreach datapoint in the data, create a cluster containing that point
       if (dataFile != null) {
          CsvParser parser = new CsvParser(dataFile);
@@ -260,8 +285,8 @@ public class HClustering {
    }
 
    private void parseArgs(String[] args) {
-      if (args.length < 1 || args.length > 4) {
-         System.out.println("Usage: java hclustering <Filename> [<threshold>] [EuclideanDistanceMeasure] [single|average|complete]");
+      if (args.length < 1 || args.length > 3) {
+         System.out.println("Usage: java hclustering <Filename> [<threshold>] [single|average|complete]");
          System.exit(1);
       }
 
@@ -270,12 +295,14 @@ public class HClustering {
          threshold = args.length >= 2 ? Double.parseDouble(args[1]) : -1;
 
          //use reflection for distance measure
+         /*
          distanceMode = args.length >= 3 ? 
           (DistanceMeasure) Class.forName(args[2]).newInstance() :
           new EuclideanDistanceMeasure();
+          */
 
-         clusterDistType = args.length >= 4 ?
-          Cluster.distType.valueOf(args[3].toUpperCase()) : Cluster.distType.AVERAGE;
+         clusterDistType = args.length >= 3 ?
+          Cluster.distType.valueOf(args[2].toUpperCase()) : Cluster.distType.AVERAGE;
       }
       catch (NumberFormatException e2) {
          System.out.println("Invalid threshold value: " + args[1]);
