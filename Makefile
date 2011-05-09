@@ -1,7 +1,10 @@
-dataDir="data/"
+dataFile="data/PilotCorrelation.csv"
 
 compile:
 	javac TemporalHClustering/HClustering.java
+
+run:
+	java TemporalHClustering/HClustering ${dataFile}
 
 dataParser:
 	javac TemporalHClustering/dataParser/ParserDriver.java

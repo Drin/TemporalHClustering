@@ -1,11 +1,13 @@
 package TemporalHClustering.dendogram;
 
+import TemporalHClustering.dataTypes.Cluster;
+
 public class DendogramNode implements Dendogram {
    private double mCorrelation;
    private Dendogram mLeft, mRight;
    
    public DendogramNode(double corr, Dendogram left, Dendogram right) {
-      mCorrelation = height;
+      mCorrelation = corr;
       mLeft = left;
       mRight = right;
    }
