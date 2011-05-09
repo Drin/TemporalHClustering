@@ -37,4 +37,31 @@ public enum SampleMethod {
    public int dist(SampleMethod otherMethod) {
       return Math.abs(mValue - otherMethod.mValue);
    }
+
+   public String toString() {
+      switch (mEncoding) {
+         case 'f':
+            return "Fecal";
+         case 'i':
+            return "Immediate";
+         case 'l':
+            return "Later";
+         default:
+            return "Unknown";
+      }
+   }
+
+   public static SampleMethod getMethod(char encoding) {
+      switch (encoding) {
+         case 'f':
+            return FECAL;
+         case 'i':
+            return IMM;
+         case 'l':
+            return LATER;
+         default:
+            System.err.println("Invalid Isolate encoding: " + encoding);
+            return null;
+      }
+   }
 }

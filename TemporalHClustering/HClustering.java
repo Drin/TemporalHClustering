@@ -29,22 +29,22 @@ import java.awt.Point;
  *
  */
 public class HClustering {
-   private Map<Integer, Map<String, double[]>> dataMapping = null;
-   private ArrayList<ArrayList<Double>> distancesMatrix;
+   //private Map<Integer, List<IsolateSample>> isolateMap = null;
    private ArrayList<Cluster> clusters;
-   private ArrayList<Dendogram> dendogram;
    private Cluster.distType clusterDistType;
-   private DistanceMeasure distanceMode = null;
-   private IterationResult clusterResults;
+   //private IterationResult clusterResults;
    private File dataFile = null;
+   private double lowerThreshold, upperThreshold;
+
+   //these variables are floating until I decide what to do with them
+   private ArrayList<Dendogram> dendogram;
    private int tupleLength = 0;
-   private double threshold;
 
    public HClustering() {
-      distancesMatrix = new ArrayList<ArrayList<Double>>();
       clusters = new ArrayList<Cluster>();
       dendogram = new ArrayList<Dendogram>();
-      threshold = -1;
+      lowerThreshold = 95;
+      upperThreshold = 99.7;
    }
 
    public static void main(String[] args) {
@@ -52,70 +52,10 @@ public class HClustering {
 
       //handle command line arguments; sets dataFile and threshold
       clusterer.parseArgs(args);
+
       //each point is a cluster, and we will combine two clusters in each iteration
-      clusterer.createInitialClusters();
+      clusterer.clusterIsolates(dataFile, clusterDistType);
 
-      //repeat until all clusters have been clustered into one
-      while (clusterer.clusters.size() > 1) {
-
-         //populate distancesMatrix
-         for (int distRow = 0; distRow < clusterer.clusters.size(); distRow++) {
-            ArrayList<Double> distancesRow = new ArrayList<Double>();
-
-            //TODO continue here
-            for (int distCol = 0; distCol < distRow; distCol++) {
-               if (clusterer.distanceMode != null) {
-                  distancesRow.add(clusterer.clusters.get(distRow).distance(
-                   clusterer.clusters.get(distCol),
-                   clusterer.distanceMode, clusterer.clusterDistType));
-               }
-            }
-
-            clusterer.distancesMatrix.add(distancesRow);
-         }
-
-
-         //(s, r) = index of minimum distance value(cluster s, cluster r);
-         double minDist = Double.MAX_VALUE;
-         //x-value of point represents row, y-value represents column
-         Point minNdx = new Point(-1, -1);
-         for (int row = 0; row < clusterer.distancesMatrix.size(); row++) {
-            for (int col = 0; col < clusterer.distancesMatrix.get(row).size(); col++) {
-               if (clusterer.distancesMatrix.get(row).get(col) < minDist) {
-                  minDist = clusterer.distancesMatrix.get(row).get(col);
-                  minNdx.setLocation(row, col);
-               }
-            }
-         }
-         //so that it can be re-used on next iteration
-         clusterer.distancesMatrix.clear();
-
-
-         //move clusters to new cluster list, when one of the clusters that will be merged
-         //is found, merge it with the other cluster, then add to new cluster list
-         //only do this for one cluster to be merged to avoid duplicates
-         ArrayList<Cluster> newClusters = new ArrayList<Cluster>();
-         ArrayList<Dendogram> newDendogram = new ArrayList<Dendogram>();
-         for (int clusterNdx = 0; clusterNdx < clusterer.clusters.size(); clusterNdx++) {
-
-            if (clusterNdx != (int) minNdx.getX() && clusterNdx != (int) minNdx.getY()) {
-               newClusters.add(clusterer.clusters.get(clusterNdx));
-               newDendogram.add(clusterer.dendogram.get(clusterNdx));
-            }
-
-            else if (clusterNdx == (int) minNdx.getX()) {
-               newClusters.add(clusterer.clusters.get(clusterNdx).unionWith(
-                clusterer.clusters.get((int) minNdx.getY())));
-               newDendogram.add(new DendogramNode(minDist,
-                clusterer.dendogram.get(clusterNdx),
-                clusterer.dendogram.get((int) minNdx.getY())));
-            }
-
-         }
-         //make the new cluster set into the current cluster set for next iteration
-         clusterer.clusters = newClusters;
-         clusterer.dendogram = newDendogram;
-      }
 
       BufferedWriter secretary = null, superSecretary = null;
 
@@ -203,6 +143,7 @@ public class HClustering {
       return actualClusters;
    }
 
+   /*
    private double[][] getClusterCentroids(ArrayList<Dendogram> clusters) {
       double[][] centroid = new double[clusters.size()][];
 
@@ -212,6 +153,7 @@ public class HClustering {
 
       return centroid;
    }
+   */
 
    private int[] getClusterCounts(ArrayList<Dendogram> clusters) {
       int[] counts = new int[clusters.size()];
@@ -223,6 +165,7 @@ public class HClustering {
       return counts;
    }
 
+   /*
    private double[] getSSEs(ArrayList<Dendogram> clusters) {
       double[] SSEs= new double[clusters.size()];
 
@@ -232,6 +175,7 @@ public class HClustering {
 
       return SSEs;
    }
+   */
 
    private double[] getMinDists(ArrayList<Dendogram> clusters) {
       double[] min = new double[clusters.size()];
@@ -257,6 +201,7 @@ public class HClustering {
       return avgs;
    }
 
+   /*
    private ArrayList<Dendogram> determineClusters(Dendogram root) {
       ArrayList<Dendogram> clusterSet = new ArrayList<Dendogram>();
 
@@ -270,29 +215,141 @@ public class HClustering {
 
       return clusterSet;
    }
+   */
 
-   private void createInitialClusters(Map<String, Cluster> clusterMap) {
-      //foreach datapoint in the data, create a cluster containing that point
+   private List<Cluster> clusterIsolates(File dataFile, Cluster.distType type) {
+      Map<Integer, List<IsolateSample>> isolateMap = null;
+      List<Cluster> clusters = new ArrayList<Cluster>();
+
       if (dataFile != null) {
-         CsvParser parser = new CsvParser(dataFile);
+         IsolateFileParser parser = new IsolateFileParser(dataFile);
 
-         for (double[] tuple : parser.extractData()) {
-            tupleLength = tuple.length;
-            clusters.add(new Cluster(tuple));
-            dendogram.add(new DendogramLeaf(tuple));
+         isolateMap = parser.extractData();
+      }
+
+      for (int sampleDay : isolateMap.keySet()) {
+         //Cluster the list of isolates in this day
+         List<Cluster> currClusters = clusterIsolateList(isolateMap.get(sampleDay), type);
+
+         //Cluster all previous days with this day
+         clusters = clusterToDate(clusters, currClusters);
+      }
+
+      return clusters;
+   }
+
+   private List<Cluster> clusterIsolateList(List<IsolateSample> isolates, Cluster.distType type) {
+      List<Cluster> clusters = new ArrayList<Cluster>();
+      for (IsolateSample sample : isolates) {
+         clusters.add(new Cluster(sample));
+      }
+
+      //variables to prepare for clustering the two closest clusters
+      Point closeClusters = new Point(-1, -1);
+      double minDist = Double.MAX_VALUE;
+      boolean hasChanged;
+
+      do {
+         hasChanged = false;
+
+         for (int clustOne = 0; clustOne < clusters.size(); clustOne++) {
+            for (int clustTwo = clustOne + 1; clustTwo < clusters.size(); clustTwo++) {
+               double clustDist = clusters.get(clustOne).distance(clusters.get(clustTwo));
+               if (clustDist < minDist) {
+                  minDist = clustDist;
+                  closeClusters = new Point(clustOne, clustTwo);
+               }
+            }
+         }
+
+         /*
+          * if newCluster list is a different sized then clearly two clusters were
+          * combined. In this case set hasChanges to true and set the cluster list to
+          * the new cluster list
+          */
+         List<Cluster> newClusters = combineClusters(clusters, closeClusters);
+         if (newClusters.size() != clusters.size()) {
+            hasChanges = true;
+            clusters = newClusters;
+         }
+
+         //for each sample cluster with other samples based on sample distance
+         //sample distance should handle group and correlation distance
+
+         //continue clustering until clusters do not change
+      } while (hasChanged);
+
+      return clusters;
+   }
+
+   /*
+    * move clusters to new cluster list, when one of the clusters that will be merged
+    * is found, merge it with the other cluster, then add to new cluster list
+    * only do this for one cluster to be merged to avoid duplicates
+    */
+   private List<Cluster> combineClusters(List<Cluster> clusters, Point minNdx) {
+      ArrayList<Cluster> newClusters = new ArrayList<Cluster>();
+      //ArrayList<Dendogram> newDendogram = new ArrayList<Dendogram>();
+
+      for (int clusterNdx = 0; clusterNdx < clusters.size(); clusterNdx++) {
+         if (clusterNdx != (int) minNdx.getX() && clusterNdx != (int) minNdx.getY()) {
+            newClusters.add(clusters.get(clusterNdx));
+            //newDendogram.add(dendogram.get(clusterNdx));
+         }
+
+         else if (clusterNdx == (int) minNdx.getX()) {
+            Cluster clusterOne = clusters.get(clusterNdx);
+            Cluster clusterTwo = clusters.get(clusters.get((int) minNdx.getY()));
+
+            /*
+            Dendogram leftDend = dendogram.get(clusterNdx);
+            Dendogram rightDend = dendogram.get((int) minNdx.getY());
+            */
+
+            newClusters.add(clusterOne.unionWith(clusterTwo));
+            //newDendogram.add(new DendogramNode(minDist, leftDend, rightDend));
          }
       }
+
+      //make the new cluster set into the current cluster set for next iteration
+      return newClusters;
+      //clusterer.dendogram = newDendogram;
+   }
+
+   private List<Cluster> clusterToDate(List<Cluster> clusters, List<Cluster> dailyClusters, Cluster.distType type) {
+      //outer for loop loops over clusters in a day
+      //inner for loop loops over clusters built up to the current day
+      for (Cluster newCluster : dailyClusters) {
+         double minDist = Double.MAX_VALUE;
+         int closeCluster = -1;
+
+         for (int clustNdx = 0; clustNdx < clusters.size(); clustNdx++) {
+            double clustDist = newCluster.distance(clusters.get(clustNdx), type);
+            if (clustDist < minDist) {
+               minDist = clustDist;
+               closeCluster = clustNdx;
+            }
+         }
+
+         //replace the cluster closest to the new Cluster with the
+         //oldCluster U newCluster
+         clusters.set(closeCluster, clusters.get(closeCluster).unionWith(newCluster));
+      }
+
+      return clusters;
    }
 
    private void parseArgs(String[] args) {
-      if (args.length < 1 || args.length > 3) {
-         System.out.println("Usage: java hclustering <Filename> [<threshold>] [single|average|complete]");
+      if (args.length < 1 || args.length > 4) {
+         System.out.println("Usage: java hclustering <Filename> [<lowerThreshold>] "+
+          "[<upperThreshold>] [single|average|complete]");
          System.exit(1);
       }
 
       try {
          dataFile = new File(args[0]);
-         threshold = args.length >= 2 ? Double.parseDouble(args[1]) : -1;
+         lowerThreshold = args.length >= 2 ? Double.parseDouble(args[1]) : lowerThreshold;
+         upperThreshold = args.length >= 3 ? Double.parseDouble(args[2]) : upperThreshold;
 
          //use reflection for distance measure
          /*
@@ -301,25 +358,13 @@ public class HClustering {
           new EuclideanDistanceMeasure();
           */
 
-         clusterDistType = args.length >= 3 ?
-          Cluster.distType.valueOf(args[2].toUpperCase()) : Cluster.distType.AVERAGE;
-      }
-      catch (NumberFormatException e2) {
-         System.out.println("Invalid threshold value: " + args[1]);
-         System.exit(1);
-      }
-      catch (ClassNotFoundException e3) {
-         System.out.println("Invalid distance measure: " + args[2]);
-         System.exit(1);
-      }
-      catch (InstantiationException e4) {
-         System.out.println("Could not instantiate class: " + args[2]);
-         System.exit(1);
-      }
-      catch (IllegalAccessException e5) {
-         System.out.println("Could not access class: " + args[2]);
-         System.exit(1);
-      }
+         clusterDistType = args.length >= 4 ?
+          Cluster.distType.valueOf(args[3].toUpperCase()) : Cluster.distType.AVERAGE;
 
+      }
+      catch (NumberFormatException formatErr) {
+         System.out.printf("Invalid threshold values: %d and %d\n", args[1], args[2]);
+         System.exit(1);
+      }
    }
 }

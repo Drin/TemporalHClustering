@@ -1,46 +1,46 @@
 package TemporalHClustering.dendogram;
 
 public class DendogramNode implements Dendogram {
-   private double height;
-   private Dendogram left, right;
+   private double mCorrelation;
+   private Dendogram mLeft, mRight;
    
-   public DendogramNode(double height, Dendogram left, Dendogram right) {
-      this.height = height;
-      this.left = left;
-      this.right = right;
+   public DendogramNode(double corr, Dendogram left, Dendogram right) {
+      mCorrelation = height;
+      mLeft = left;
+      mRight = right;
    }
 
-   public double getHeight() {
-      return height;
+   public double getCorrelation() {
+      return mCorrelation;
    }
 
    public Dendogram getLeft() {
-      return left;
+      return mLeft;
    }
 
    public Dendogram getRight() {
-      return right;
+      return mRight;
    }
 
    public Cluster toCluster() {
-      return left.toCluster().unionWith(right.toCluster());
+      return mLeft.toCluster().unionWith(mRight.toCluster());
    }
 
    public String getXML() {
-      String xmlStr = String.format("<tree height = \"%.1f\" >\n", height);
+      String xmlStr = String.format("<tree correlation = \"%.02f\" >\n", mCorrelation);
 
-      xmlStr += left.toXML("\t");
-      xmlStr += right.toXML("\t");
+      xmlStr += mLeft.toXML("\t");
+      xmlStr += mRight.toXML("\t");
 
       xmlStr += "</tree>\n";
       return xmlStr;
    }
 
    public String toXML(String spacing) {
-      String xmlStr = String.format("%s<node height = \"%.1f\">\n", spacing, height);
+      String xmlStr = String.format("%s<node correlation = \"%.02f\">\n", spacing, mCorrelation);
 
-      xmlStr += left.toXML(spacing + "\t");
-      xmlStr += right.toXML(spacing + "\t");
+      xmlStr += mLeft.toXML(spacing + "\t");
+      xmlStr += mRight.toXML(spacing + "\t");
 
       xmlStr += spacing + "</node>\n";
       return xmlStr;

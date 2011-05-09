@@ -1,60 +1,54 @@
 package TemporalHClustering.dendogram;
 
 public class DendogramLeaf implements Dendogram {
-   private double[] data;
-   private double height;
-   private Dendogram left, right;
+   private double mCorrelation;
+   private IsolateSample mIsolate;
+   private Dendogram mLeft, mRight;
 
-   public DendogramLeaf(double[] dataPoint) {
-      data = dataPoint;
-      left = null;
-      right = null;
-      height = 0;
+   public DendogramLeaf(IsolateSample sample) {
+      mCorrelation = 100;
+      mIsolate = sample;
+      mLeft = null;
+      mRight = null;
    }
 
-   public double getHeight() {
-      return height;
+   public double getCorrelation() {
+      return mCorrelation;
+   }
+
+   public IsolateSample getIsolate() {
+      return mIsolate;
    }
 
    public Dendogram getLeft() {
-      return left;
+      return mLeft;
    }
 
    public Dendogram getRight() {
-      return right;
-   }
-
-   public double[] getData() {
-      return data;
+      return mRight;
    }
 
    public Cluster toCluster() {
-      return new Cluster(data);
+      return new Cluster(mIsolate);
    }
 
    public String toString() {
-      String outStr = "";
-
-      for (int dataNdx = 0; dataNdx < data.length; dataNdx++) {
-         outStr += data[dataNdx] + ", ";
-      }
-
-      return outStr.substring(0, outStr.length() - 2);
+      return String.format("%s", mIsolate);
    }
 
    public String getXML() {
-      String xmlStr = String.format("<tree height = \"%.1f\" >\n", height);
+      String xmlStr = String.format("<tree correlation = \"%.02f\" >\n", correlation);
 
-      xmlStr += String.format("\t<leaf height = \"%.1f\" data = \"%s\"/>\n",
-       height, toString());
+      xmlStr += String.format("\t<leaf correlation = \"%.02f\" isolate = \"%s\"/>\n",
+       correlation, toString());
 
       xmlStr += "</tree>\n";
       return xmlStr;
    }
 
    public String toXML(String spacing) {
-      String xmlStr = String.format("%s<leaf height = \"%.1f\" data = \"%s\"/>\n",
-       spacing, height, toString());
+      String xmlStr = String.format("%s<leaf correlation = \"%.02f\" data = \"%s\"/>\n",
+       spacing, correlation, toString());
 
       return xmlStr;
    }

@@ -1,7 +1,7 @@
 package TemporalHClustering.dendogram;
 
 public interface Dendogram {
-   public double getHeight();
+   public double getCorrelation();
    public Dendogram getLeft();
    public Dendogram getRight();
    public Cluster toCluster();

@@ -1,29 +1,31 @@
 package TemporalHClustering.dataParser;
 
+import TemporalHClustering.dataTypes.IsolateSample;
+
 import java.io.File;
 import java.util.Map;
+import java.util.List;
 
 public class ParserDriver {
    public static void main(String[] args) {
-      CsvParser parser = new CsvParser(new File(args[0]));
+      IsolateFileParser parser = new IsolateFileParser(new File(args[0]));
 
-      Map<String, double[]> data = parser.extractData();
+      Map<Integer, List<IsolateSample>> data = parser.extractData();
 
-      for (String isolateName : data.keySet()) {
-         System.out.println("isolate " + isolateName + ": " +
-          printArr(data.get(isolateName)));
+      for (int day : data.keySet()) {
+         System.out.printf("day %d: %s\n", day, printList(data.get(day)));
       }
    }
 
-   public static String printArr(double[] arr) {
-      String arrStr = "";
+   public static String printList(List<IsolateSample> dataList) {
+      String dataStr = "";
 
-      if (arr.length == 0)
-         return arrStr;
-
-      for (int arrNdx = 0; arrNdx < arr.length - 1; arrNdx++) {
-         arrStr += arr[arrNdx] + ", ";
+      if (!dataList.isEmpty()) {
+         for (int sampleNdx = 0; sampleNdx < dataList.size(); sampleNdx++) {
+            dataStr += String.format("\n\t%s", dataList.get(sampleNdx));
+         }
       }
-      return arrStr + arr[arr.length - 1];
+
+      return dataStr;
    }
 }
