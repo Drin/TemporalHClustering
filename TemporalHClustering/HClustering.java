@@ -56,14 +56,16 @@ public class HClustering {
 
       //each point is a cluster, and we will combine two clusters in each iteration
       List<ClusterDendogram> clustDends = clusterer.clusterIsolates(clusterer.dataFile, clusterer.clusterDistType);
+      System.err.println("clustDends length: " + clustDends.size());
 
-      String outputFileDir = String.format("ClusterResults/%s_%.02f_%.02f/",
+      String outputFileDir = String.format("ClusterResults/%s_%.02f_%.02f",
        clusterer.clusterDistType, clusterer.lowerThreshold, clusterer.upperThreshold);
 
       clusterer.outputClusters(clustDends, outputFileDir);
    }
 
    private void outputClusters(List<ClusterDendogram> clustDends, String outFileDir) {
+      System.err.println("outputing clusters..");
       BufferedWriter statisticsWriter = null, xmlWriter = null;
 
       //outputs xml and cluster data
@@ -80,13 +82,16 @@ public class HClustering {
                }
             }
 
+            /*
             statisticsWriter = new BufferedWriter(new FileWriter(new File(
              String.format("%s/%sClusterStatistics", xmlOutDir,
              dataFile.getName().substring(0, dataFile.getName().indexOf(".csv"))))));
+            */
 
             xmlWriter = new BufferedWriter(new FileWriter(new File(String.format("%s/%s.xml", xmlOutDir,
              dataFile.getName().substring(0, dataFile.getName().indexOf(".csv"))))));
 
+            System.out.println("dendogram: " + clustDend.getDendogram().getXML());
             xmlWriter.write(clustDend.getDendogram().getXML());
             xmlWriter.close();
          }
@@ -95,6 +100,7 @@ public class HClustering {
             e1.printStackTrace();
             System.exit(1);
          }
+         System.err.println("finished outputing clusters..");
 
          /*
          if (clusterer.threshold > -1) {
@@ -136,6 +142,7 @@ public class HClustering {
          }
          */
       }
+      System.err.println("finished");
    }
 
 
@@ -217,6 +224,7 @@ public class HClustering {
       for (int sampleDay : isolateMap.keySet()) {
          //Cluster the list of isolates in this day
          List<ClusterDendogram> currClusters = clusterIsolateList(isolateMap.get(sampleDay), type);
+         System.err.println("currClusters length: " + currClusters.size());
 
          //Cluster all previous days with this day
          clusters = clusterToDate(clusters, currClusters, type);
@@ -226,7 +234,6 @@ public class HClustering {
    }
 
    private List<ClusterDendogram> clusterIsolateList(List<IsolateSample> isolates, Cluster.distType type) {
-      System.out.printf("IsolateList size: %d\n", isolates.size());
       List<ClusterDendogram> clusters = new ArrayList<ClusterDendogram>();
 
       for (IsolateSample sample : isolates) {
@@ -235,7 +242,7 @@ public class HClustering {
 
          clusters.add(new ClusterDendogram(newCluster, newDendogram));
       }
-      System.out.printf("clusterList size: %d\n", clusters.size());
+      //System.out.printf("clusterList size: %d\n", clusters.size());
 
       //variables to prepare for clustering the two closest clusters
       Point closeClusters = new Point(-1, -1);
@@ -246,22 +253,24 @@ public class HClustering {
       do {
          hasChanged = false;
 
+         //System.out.printf("IsolateList size: %d\n", isolates.size());
          for (int clustOne = 0; clustOne < clusters.size(); clustOne++) {
             for (int clustTwo = clustOne + 1; clustTwo < clusters.size(); clustTwo++) {
                Cluster cluster_A = clusters.get(clustOne).getCluster();
                Cluster cluster_B = clusters.get(clustTwo).getCluster();
                double clustDist = cluster_A.distance(cluster_B, type);
 
-               if (clustDist < minDist) {
-                  System.out.printf("a minimum has been found at index <%d, %d>\n", clustOne, clustTwo);
-                  System.out.printf("clustOne:\n\t\t%s\nclustTwo:\n\t\t%s\n", cluster_A, cluster_B);
+               //apply a threshold here
+               //if (clustDist < minDist ) {
+               if (clustDist < minDist && clustDist < 3.03 ) {
+                  //System.out.printf("a minimum has been found at index <%d, %d>\n", clustOne, clustTwo);
+                  //System.out.printf("clustOne:\n\t\t%s\nclustTwo:\n\t\t%s\n", cluster_A, cluster_B);
                   minDist = clustDist;
                   closeClusters = new Point(clustOne, clustTwo);
                }
             }
          }
-         System.out.printf("closeClusters: <%f, %f> dist: %.02f\n", closeClusters.getX(), closeClusters.getY(), minDist);
-         System.out.printf("clusters size: %d\n", clusters.size());
+         //System.out.printf("closeClusters: <%f, %f> dist: %.02f\n", closeClusters.getX(), closeClusters.getY(), minDist);
 
          /*
           * if newCluster list is a different sized then clearly two clusters were
@@ -269,10 +278,15 @@ public class HClustering {
           * the new cluster list
           */
          List<ClusterDendogram> newClusters = combineClusters(clusters, closeClusters, minDist);
+         System.err.printf("newClusterList size: %d\n", newClusters.size());
          if (newClusters.size() != clusters.size()) {
             hasChanged = true;
             clusters = newClusters;
          }
+
+         //reset various variables
+         closeClusters = new Point(-1, -1);
+         minDist = Double.MAX_VALUE;
 
          //for each sample cluster with other samples based on sample distance
          //sample distance should handle group and correlation distance
@@ -289,7 +303,7 @@ public class HClustering {
     * only do this for one cluster to be merged to avoid duplicates
     */
    private List<ClusterDendogram> combineClusters(List<ClusterDendogram> clusters, Point minNdx, double correlation) {
-      System.out.printf("minNdx for cluster combining is <%f, %f>\n", minNdx.getX(), minNdx.getY());
+      //System.out.printf("minNdx for cluster combining is <%f, %f>\n", minNdx.getX(), minNdx.getY());
       ArrayList<ClusterDendogram> newClusters = new ArrayList<ClusterDendogram>();
       //ArrayList<Dendogram> newDendogram = new ArrayList<Dendogram>();
 
@@ -301,7 +315,7 @@ public class HClustering {
 
          else if (clusterNdx == (int) minNdx.getX()) {
             //using minNdx for cluster one for consistency and readability
-            System.out.printf("minNdx X: %d minNdx Y: %d clustersLength: %d", (int) minNdx.getX(), (int) minNdx.getY(), clusters.size());
+            //System.out.printf("minNdx X: %d minNdx Y: %d clustersLength: %d", (int) minNdx.getX(), (int) minNdx.getY(), clusters.size());
             Cluster clusterOne = clusters.get((int) minNdx.getX()).getCluster();
             Cluster clusterTwo = clusters.get((int) minNdx.getY()).getCluster();
             Cluster combinedCluster = new Cluster(clusterOne.unionWith(clusterTwo));
@@ -335,7 +349,9 @@ public class HClustering {
             Cluster currClust = clusters.get(clustNdx).getCluster();
             double clustDist = newCluster.distance(currClust, type);
 
-            if (clustDist < minDist) {
+            //TODO apply threshold here
+            //TODO figure out how to not have all the clusters collapse. or ensure that they are collapsing correctly
+            if (clustDist < minDist && clustDist < -1.03) {
                minDist = clustDist;
                closeClusterNdx = clustNdx;
             }
@@ -343,13 +359,15 @@ public class HClustering {
 
          //replace the cluster closest to the new Cluster with the
          //oldCluster U newCluster
-         Cluster closeCluster = clusters.get(closeClusterNdx).getCluster();
-         Dendogram newDendogram = new DendogramNode(minDist, newClusterDend.getDendogram(),
-          clusters.get(closeClusterNdx).getDendogram());
-         ClusterDendogram newClustDend = new ClusterDendogram(
-          closeCluster.unionWith(newCluster), newDendogram);
+         if (closeClusterNdx != -1) {
+            Cluster closeCluster = clusters.get(closeClusterNdx).getCluster();
+            Dendogram newDendogram = new DendogramNode(minDist, newClusterDend.getDendogram(),
+             clusters.get(closeClusterNdx).getDendogram());
+            ClusterDendogram newClustDend = new ClusterDendogram(
+             closeCluster.unionWith(newCluster), newDendogram);
 
-         clusters.set(closeClusterNdx, newClustDend);
+            clusters.set(closeClusterNdx, newClustDend);
+         }
       }
 
       return clusters;

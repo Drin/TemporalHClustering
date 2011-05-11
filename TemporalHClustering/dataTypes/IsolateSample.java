@@ -48,11 +48,17 @@ public class IsolateSample {
    }
 
    public double compareTo(IsolateSample otherIsolate) {
-      System.out.printf("comparing '%s' to '%s'\n", mIsolateName, otherIsolate.getName());
-      System.out.printf("am I contained in the other's correlation? %s\n", (otherIsolate.getCorrMap().containsKey(this)));
-      return mCorrMap.containsKey(otherIsolate) ?
-       mCorrMap.get(otherIsolate) :
-       otherIsolate.getCorrMap().get(this);
+      double correlation = 0;
+      //System.out.printf("comparing '%s' to '%s'\n", mIsolateName, otherIsolate.getName());
+      //System.out.printf("am I contained in the other's correlation? %s\n", (otherIsolate.getCorrMap().containsKey(this)));
+      if (mCorrMap.containsKey(otherIsolate)) {
+         correlation = 100 - mCorrMap.get(otherIsolate);
+      }
+      else {
+         correlation = 100 - otherIsolate.getCorrMap().get(this);
+      }
+
+      return correlation + mGroup.dist(otherIsolate.getSampleMethod());
    }
 
    public int hashCode() {
