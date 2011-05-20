@@ -11,10 +11,14 @@ import java.util.List;
 import java.util.ArrayList;
 
 public class IsolateFileParser {
-   File file = null;
+   private boolean mTransform = true;
+   private File mFile = null;
+   private double mLowerThreshold, mUpperThreshold;
 
-   public IsolateFileParser(File parseFile) {
-      file = parseFile;
+   public IsolateFileParser(File parseFile, double lower, double upper) {
+      mFile = parseFile;
+      mLowerThreshold = lower;
+      mUpperThreshold = upper;
    }
 
    public Map<Integer, List<IsolateSample>> extractData() {
@@ -24,10 +28,10 @@ public class IsolateFileParser {
       Scanner fileParser = null;
 
       try {
-         fileParser = new Scanner(file);
+         fileParser = new Scanner(mFile);
       }
       catch (java.io.FileNotFoundException fileErr) {
-         System.out.println("could not find file: " + file);
+         System.out.println("could not find file: " + mFile);
          return null;
       }
 
@@ -51,6 +55,9 @@ public class IsolateFileParser {
          }
       }
 
+      /*
+       * create correlations between Isolate Samples
+       */
       for (int tupleNdx = 0; fileParser.hasNextLine(); tupleNdx++) {
          HashMap<IsolateSample, Double> corrMap = new HashMap<IsolateSample, Double>();
          String[] tuplesString = fileParser.nextLine().replaceAll(" ", "").split(",");
@@ -67,8 +74,21 @@ public class IsolateFileParser {
 
          for (int colNdx = 1; colNdx < tuplesString.length; colNdx++) {
             try {
-               corrMap.put(isolateIdMap.get(colNdx - 1),
-                Double.parseDouble(tuplesString[colNdx]));
+               if (mTransform) {
+                  double correlation = Double.parseDouble(tuplesString[colNdx]);
+                  //transform the correlation thusly:
+                  //    if > upperThreshold replace with 100 (exact match)
+                  //    if < lowerThreshold replace with 0 (different)
+                  //    else use original value (squishy area)
+                  correlation = correlation > mUpperThreshold ? 100 :
+                   correlation < mLowerThreshold ? 0 : correlation;
+
+                  corrMap.put(isolateIdMap.get(colNdx - 1), correlation);
+               }
+               else {
+                  corrMap.put(isolateIdMap.get(colNdx - 1),
+                   Double.parseDouble(tuplesString[colNdx]));
+               }
             }
             catch(NumberFormatException err) {
                System.err.println("invalid double value for isolate " +

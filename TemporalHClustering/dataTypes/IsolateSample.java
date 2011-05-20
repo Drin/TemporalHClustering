@@ -1,5 +1,7 @@
 package TemporalHClustering.dataTypes;
 
+import TemporalHClustering.distanceMeasures.IsolateDistance;
+
 import java.util.Map;
 
 public class IsolateSample {
@@ -48,6 +50,9 @@ public class IsolateSample {
    }
 
    public double compareTo(IsolateSample otherIsolate) {
+      /*
+       * Try using IsolateDistance for now
+       *
       double correlation = 0;
       //System.out.printf("comparing '%s' to '%s'\n", mIsolateName, otherIsolate.getName());
       //System.out.printf("am I contained in the other's correlation? %s\n", (otherIsolate.getCorrMap().containsKey(this)));
@@ -59,6 +64,8 @@ public class IsolateSample {
       }
 
       return correlation + mGroup.dist(otherIsolate.getSampleMethod());
+      */
+      return IsolateDistance.getDistance(this, otherIsolate);
    }
 
    public int hashCode() {
@@ -66,7 +73,7 @@ public class IsolateSample {
    }
 
    public String toString() {
-      String printStr = String.format("'%s'", mIsolateName);
+      String printStr = String.format("%s", mIsolateName);
       /*
       printStr += String.format("\n\t\t* %s *", mGroup);
 
