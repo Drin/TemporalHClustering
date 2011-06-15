@@ -68,6 +68,43 @@ public class IsolateSample {
       return IsolateDistance.getDistance(this, otherIsolate);
    }
 
+   public boolean isSameIsolate(IsolateSample otherIsolate) {
+      return mIsolateName.equals(otherIsolate.mIsolateName);
+   }
+
+   /*
+   public String printCorrs() {
+      String corrMap = "";
+
+      for (IsolateSample sample : mCorrMap.keySet()) {
+         corrMap += ",\t" + sample;
+      }
+      corrMap += "\n" + mIsolateName + "";
+
+      for (IsolateSample sample : mCorrMap.keySet()) {
+         corrMap += ",\t" + mCorrMap.get(sample);
+      }
+
+      return corrMap;
+   }
+   */
+   public String printCorrs() {
+      String corrMap = "";
+
+      /*
+      for (IsolateSample sample : mCorrMap.keySet()) {
+         corrMap += ",\t" + sample;
+      }
+      corrMap += "\n" + mIsolateName + "";
+      */
+
+      for (IsolateSample sample : mCorrMap.keySet()) {
+         corrMap += "," + mCorrMap.get(sample);
+      }
+
+      return corrMap;
+   }
+
    public int hashCode() {
       return mIsolateName.hashCode();
    }

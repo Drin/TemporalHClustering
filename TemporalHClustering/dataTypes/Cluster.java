@@ -133,6 +133,8 @@ public class Cluster {
       return newCluster;
    }
 
+   //closest distances are being calculated using "distance" and then recalculated
+   //to be the correlation between those two distances. I think this is correct
    public double actualDistance(Cluster otherCluster, distType type) {
       double closestDist = -1;
       int closestNdxOne = -1, closestNdxTwo = -1;
@@ -229,14 +231,20 @@ public class Cluster {
          case AVERAGE:
             double totalDist = 0, totalSize = 0;
 
+            //System.err.println("calculating average...\n");
+
             for (int dataNdx = 0; dataNdx < this.isolates.size(); dataNdx++) {
                for (int otherNdx = 0; otherNdx < otherCluster.isolates.size(); otherNdx++) {
-                  totalDist += 100 - IsolateDistance.findCorrelation(this.isolates.get(dataNdx),
+                  totalDist += IsolateDistance.findCorrelation(this.isolates.get(dataNdx),
+                  //totalDist += 100 - IsolateDistance.findCorrelation(this.isolates.get(dataNdx),
                    otherCluster.isolates.get(otherNdx));
 
                   totalSize++;
+                  //System.err.println("totalDist: " + totalDist);
                }
             }
+
+            //System.err.println(totalDist + "/" + totalSize + " = " + (totalDist/totalSize));
 
             closestDist = totalDist/totalSize;
             break;
@@ -340,7 +348,7 @@ public class Cluster {
       String str = "";
 
       for (int clusterNdx = 0; clusterNdx < isolates.size(); clusterNdx++) {
-         str += isolates.get(clusterNdx);
+         str += isolates.get(clusterNdx) + ", ";
       }
 
       return str;

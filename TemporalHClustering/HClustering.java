@@ -2,19 +2,21 @@ package TemporalHClustering;
 
 import TemporalHClustering.dataParser.IsolateFileParser;
 import TemporalHClustering.dataTypes.Cluster;
+import TemporalHClustering.dataTypes.ClusterDendogram;
 import TemporalHClustering.dataTypes.IsolateSample;
 import TemporalHClustering.distanceMeasures.IsolateDistance;
 import TemporalHClustering.dendogram.Dendogram;
 import TemporalHClustering.dendogram.DendogramNode;
 import TemporalHClustering.dendogram.DendogramLeaf;
+import TemporalHClustering.IsolateOutputWriter;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
+import java.io.File;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
-import java.io.File;
 import java.awt.Point;
 
 /*
@@ -63,51 +65,11 @@ public class HClustering {
       String outputFileDir = String.format("ClusterResults/%s_%.02f_%.02f",
        clusterer.mClusterDistType, clusterer.mLowerThreshold, clusterer.mUpperThreshold);
 
-      clusterer.outputClusters(clustDends, outputFileDir);
-   }
+      String outputFileName = String.format("%s/%s.xml", outputFileDir,
+       clusterer.mDataFile.getName().substring(0,
+       clusterer.mDataFile.getName().indexOf(".csv")));
 
-   private void outputClusters(List<ClusterDendogram> clustDends, String outFileDir) {
-      BufferedWriter xmlWriter = null;
-      String xmlOutput = "";
-
-      List<Dendogram> dendogramList = new ArrayList<Dendogram>();
-      for (ClusterDendogram clusterDend : clustDends) {
-         dendogramList.add(clusterDend.getDendogram());
-         //System.out.println(clusterDend.getCluster());
-      }
-
-      //System.out.println(DendogramNode.toUAGDot(dendogramList));
-
-      for (ClusterDendogram clustDend : clustDends) {
-         xmlOutput += clustDend.getDendogram().getXML() + "\n";
-         //System.out.println("dendogram: " + clustDend.getDendogram().getXML());
-      }
-
-      //outputs xml and cluster data
-      File xmlOutDir = null;
-
-      try {
-         xmlOutDir = new File(outFileDir);
-
-         if(!xmlOutDir.isDirectory()) {
-            if (!xmlOutDir.mkdirs()) {
-               System.out.println("error creating directory");
-               System.exit(1);
-            }
-         }
-
-         xmlWriter = new BufferedWriter(new FileWriter(
-          new File(String.format("%s/%s.xml", xmlOutDir,
-          mDataFile.getName().substring(0, mDataFile.getName().indexOf(".csv"))))));
-
-         xmlWriter.write(xmlOutput);
-         xmlWriter.close();
-      }
-      catch(Exception e1) {
-         //System.out.println("Error writing cluster to file");
-         e1.printStackTrace();
-         System.exit(1);
-      }
+      IsolateOutputWriter.outputClusters(clustDends, outputFileDir, outputFileName);
    }
 
    private List<ClusterDendogram> clusterIsolates(File dataFile, double lowerThreshold, double upperThreshold, Cluster.distType type) {
@@ -124,6 +86,7 @@ public class HClustering {
          //Cluster the list of isolates in this day
          List<ClusterDendogram> currClusters = clusterIsolateList(isolateMap.get(sampleDay), type);
 
+         IsolateOutputWriter.outputClustersByDay(sampleDay, currClusters);
          /*
          System.err.println("currClusters length: " + currClusters.size());
          /*
@@ -142,45 +105,94 @@ public class HClustering {
    }
 
    private List<ClusterDendogram> clusterIsolateList(List<IsolateSample> isolates, Cluster.distType type) {
+      //represent fecal samples
+      List<ClusterDendogram> clusterF = new ArrayList<ClusterDendogram>();
+      //represent immediate (after) samples
+      List<ClusterDendogram> clusterI = new ArrayList<ClusterDendogram>();
+      //represent later samples
+      List<ClusterDendogram> clusterL = new ArrayList<ClusterDendogram>();
+
+      //clusters resulting from clustering the above clusters will be placed in
+      //clusters and this will prevent me from having to change the rest of this
+      //method.
       List<ClusterDendogram> clusters = new ArrayList<ClusterDendogram>();
 
       for (IsolateSample sample : isolates) {
          Cluster newCluster = new Cluster(sample);
          Dendogram newDendogram = new DendogramLeaf(sample);
 
-         clusters.add(new ClusterDendogram(newCluster, newDendogram));
+         switch(sample.getSampleMethod()) {
+            case FECAL:
+               clusterF.add(new ClusterDendogram(newCluster, newDendogram));
+               break;
+            case IMM:
+               clusterI.add(new ClusterDendogram(newCluster, newDendogram));
+               break;
+            case LATER:
+               clusterL.add(new ClusterDendogram(newCluster, newDendogram));
+               break;
+            default:
+               System.err.println("serious error here");
+               break;
+         }
       }
       //System.out.printf("clusterList size: %d\n", clusters.size());
 
-      //variables to prepare for clustering the two closest clusters
+      //cluster within each group
+      clusterF = clusterGroup(clusterF, type);
+      clusterI = clusterGroup(clusterI, type);
+      clusterL = clusterGroup(clusterL, type);
+
+
+      //cluster each group together:
+      //F and I together first since they are the closest in time
+      //F_I and L next since they are the next closest in time
+
+      //was going to use "clusterAcrossGroup" but there seemed to be a lot of
+      //logical traps such as where to put clusters that are combined and all of
+      //the problems that followed from that
+      clusters.addAll(clusterF);
+      clusters.addAll(clusterI);
+      clusters = clusterGroup(clusters, type);
+
+      clusters.addAll(clusterL);
+      clusters = clusterGroup(clusters, type);
+
+      //clusters within all the day's clusters
+      //based on the above clusterGroup call this would likely be repetitive
+      //clusters = clusterGroup(clusters, type);
+
+      return clusters;
+   }
+
+   private List<ClusterDendogram> clusterGroup(List<ClusterDendogram> clusters, Cluster.distType type) {
       Point closeClusters = new Point(-1, -1);
       double minDist = Double.MAX_VALUE;
       boolean hasChanged;
 
-      /*
-       * clustering within a day uses correlations and sampling methods for distance
-       */
       do {
          hasChanged = false;
 
-         //System.out.printf("IsolateList size: %d\n", isolates.size());
          for (int clustOne = 0; clustOne < clusters.size(); clustOne++) {
             for (int clustTwo = clustOne + 1; clustTwo < clusters.size(); clustTwo++) {
                Cluster cluster_A = clusters.get(clustOne).getCluster();
                Cluster cluster_B = clusters.get(clustTwo).getCluster();
-               double clustDist = cluster_A.distance(cluster_B, type);
+               //double clustDist = cluster_A.distance(cluster_B, type);
+               //this will ensure that i'm only comparing based on correlations
+               double clustDist = cluster_A.corrDistance(cluster_B, type);
+               /*
+               if (clustDist > 1) {
+                  System.err.println("cluster group clustDist: " + clustDist + " between " + cluster_A + " and " + cluster_B);
+               }
+               */
 
-               //apply a threshold here
-               //if (clustDist < minDist ) {
-               if (clustDist < minDist && clustDist < 3.03 ) {
-                  //System.out.printf("a minimum has been found at index <%d, %d>\n", clustOne, clustTwo);
-                  //System.out.printf("clustOne:\n\t\t%s\nclustTwo:\n\t\t%s\n", cluster_A, cluster_B);
+               if (clustDist < minDist && clustDist > 99.7 ) {
+               //if (clustDist < minDist && clustDist < .03 ) {
                   minDist = clustDist;
                   closeClusters = new Point(clustOne, clustTwo);
                }
             }
          }
-         //System.out.printf("closeClusters: <%f, %f> dist: %.02f\n", closeClusters.getX(), closeClusters.getY(), minDist);
 
          /*
           * if newCluster list is a different sized then clearly two clusters were
@@ -188,7 +200,7 @@ public class HClustering {
           * the new cluster list
           */
          List<ClusterDendogram> newClusters = combineClusters(clusters, closeClusters, minDist, type);
-         //System.err.printf("newClusterList size: %d\n", newClusters.size());
+
          if (newClusters.size() != clusters.size()) {
             hasChanged = true;
             clusters = newClusters;
@@ -198,14 +210,81 @@ public class HClustering {
          closeClusters = new Point(-1, -1);
          minDist = Double.MAX_VALUE;
 
-         //for each sample cluster with other samples based on sample distance
-         //sample distance should handle group and correlation distance
-
          //continue clustering until clusters do not change
       } while (hasChanged);
 
       return clusters;
    }
+
+   /*
+    * I think this adds too many logical errors.
+   private List<ClusterDendogram> clusterAcrossGroups(List<ClusterDendogram> groupOne,
+    List<ClusterDendogram> groupTwo) {
+      List<ClusterDendogram> clusters = new ArrayList<ClusterDendogram>();
+
+      Point closeClusters = new Point(-1, -1);
+      double minDist = Double.MAX_VALUE;
+      boolean hasChanged;
+
+      while (!groupOne.isEmpty() && !groupTwo.isEmpty()) {
+         if (groupOne.isEmpty()) {
+            for (ClusterDendogram clustDend : groupTwo) {
+               clusters.add(clustDend);
+            }
+            break;
+         }
+
+         else if (groupTwo.isEmpty()) {
+            for (ClusterDendogram clustDend : groupOne) {
+               clusters.add(clustDend);
+            }
+            break;
+         }
+
+         for (int clustOne = 0; clustOne < groupOne.size(); clustOne++) {
+            for (int clustTwo = 0; clustTwo < groupTwo.size(); clustTwo++) {
+               Cluster cluster_A = groupOne.get(clustOne).getCluster();
+               Cluster cluster_B = groupTwo.get(clustTwo).getCluster();
+               double clustDist = cluster_A.distance(cluster_B, type);
+               System.err.println("cross group clustDist: " + clustDist);
+
+               if (clustDist < minDist && clustDist < .03 ) {
+                  minDist = clustDist;
+                  closeClusters = new Point(clustOne, clustTwo);
+               }
+            }
+         }
+
+         if (((int) closeClusters.getX()) != -1 && ((int) closeClusters.getY()) != -1) {
+            //using closeClusters for cluster one for consistency and readability
+            //System.out.printf("closeClusters X: %d closeClusters Y: %d clustersLength: %d", (int) closeClusters.getX(), (int) closeClusters.getY(), clusters.size());
+            Cluster clusterOne = groupOne.get((int) closeClusters.getX()).getCluster();
+            Cluster clusterTwo = groupTwo.get((int) closeClusters.getY()).getCluster();
+            Cluster combinedCluster = new Cluster(clusterOne.unionWith(clusterTwo));
+
+            //using closeClusters for dendogram one for consistency and readability
+            Dendogram leftDend = groupOne.get((int) closeClusters.getX()).getDendogram();
+            Dendogram rightDend = groupTwo.get((int) closeClusters.getY()).getDendogram();
+            Dendogram newDendogram = new DendogramNode(clusterOne.actualDistance(clusterTwo, type), leftDend, rightDend);
+
+            clusters.add(new ClusterDendogram(combinedCluster, newDendogram));
+            groupOne.set((int) closeClusters.getX(), 
+
+            //possible that multiple clusters in groupTwo will cluster with a cluster in groupOne
+            //groupOne.remove((int) closeClusters.getX());
+            groupTwo.remove((int) closeClusters.getY());
+         }
+
+         //reset various variables
+         closeClusters = new Point(-1, -1);
+         minDist = Double.MAX_VALUE;
+
+         //continue clustering until clusters do not change
+      }
+
+      return clusters;
+   }
+   */
 
    /*
     * move clusters to new cluster list, when one of the clusters that will be merged
@@ -233,7 +312,8 @@ public class HClustering {
             //using minNdx for dendogram one for consistency and readability
             Dendogram leftDend = clusters.get((int) minNdx.getX()).getDendogram();
             Dendogram rightDend = clusters.get((int) minNdx.getY()).getDendogram();
-            Dendogram newDendogram = new DendogramNode(clusterOne.actualDistance(clusterTwo, type), leftDend, rightDend);
+            //Dendogram newDendogram = new DendogramNode(clusterOne.actualDistance(clusterTwo, type), leftDend, rightDend);
+            Dendogram newDendogram = new DendogramNode(clusterOne.corrDistance(clusterTwo, type), leftDend, rightDend);
 
             newClusters.add(new ClusterDendogram(combinedCluster, newDendogram));
          }
@@ -264,7 +344,8 @@ public class HClustering {
             Cluster currClust = clusters.get(clustNdx).getCluster();
             double clustDist = newCluster.corrDistance(currClust, type);
 
-            if (clustDist < minDist && clustDist < mLowerThreshold) {
+            //if (clustDist < minDist && clustDist < mLowerThreshold) {
+            if (clustDist < minDist && clustDist >= mUpperThreshold) {
                minDist = clustDist;
                closeClusterNdx = clustNdx;
             }
@@ -319,21 +400,4 @@ public class HClustering {
       }
    }
 
-private class ClusterDendogram {
-   private Cluster mCluster;
-   private Dendogram mDendogram;
-
-   public ClusterDendogram(Cluster cluster, Dendogram dendogram) {
-      mCluster = cluster;
-      mDendogram = dendogram;
-   }
-
-   public Cluster getCluster() {
-      return mCluster;
-   }
-
-   public Dendogram getDendogram() {
-      return mDendogram;
-   }
-}
 }
