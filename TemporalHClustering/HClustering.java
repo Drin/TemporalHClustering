@@ -70,6 +70,8 @@ public class HClustering {
        clusterer.mDataFile.getName().indexOf(".csv")));
 
       IsolateOutputWriter.outputClusters(clustDends, outputFileDir, outputFileName);
+      IsolateOutputWriter.outputCytoscapeFormat(clustDends);
+      IsolateOutputWriter.outputTemporalClusters(clustDends);
    }
 
    private List<ClusterDendogram> clusterIsolates(File dataFile, double lowerThreshold, double upperThreshold, Cluster.distType type) {
@@ -186,6 +188,7 @@ public class HClustering {
                }
                */
 
+               //System.out.println("ward's distance: " + clustDist);
                if (clustDist < minDist && clustDist > 99.7 ) {
                //if (clustDist < minDist && clustDist < .03 ) {
                   minDist = clustDist;
@@ -345,6 +348,7 @@ public class HClustering {
             double clustDist = newCluster.corrDistance(currClust, type);
 
             //if (clustDist < minDist && clustDist < mLowerThreshold) {
+            //System.out.println("cluster to date ward's distance: " + clustDist);
             if (clustDist < minDist && clustDist >= mUpperThreshold) {
                minDist = clustDist;
                closeClusterNdx = clustNdx;
@@ -374,7 +378,7 @@ public class HClustering {
    private void parseArgs(String[] args) {
       if (args.length < 1 || args.length > 4) {
          System.out.println("Usage: java hclustering <Filename> [<lowerThreshold>] "+
-          "[<upperThreshold>] [single|average|complete]");
+          "[<upperThreshold>] [single|average|complete|ward]");
          System.exit(1);
       }
 
