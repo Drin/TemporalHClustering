@@ -73,7 +73,9 @@ public class HClustering {
    }
 
    private List<ClusterDendogram> clusterIsolates(File dataFile, double lowerThreshold, double upperThreshold, Cluster.distType type) {
+      //mappings represent days to isolates
       Map<Integer, List<IsolateSample>> isolateMap = null;
+      //list of all constructed clusters
       List<ClusterDendogram> clusters = new ArrayList<ClusterDendogram>();
 
       if (dataFile != null) {
@@ -98,7 +100,6 @@ public class HClustering {
          //System.err.printf("on day %d there are a total of %d clusters", sampleDay, clusters.size());
          //Cluster all previous days with this day
          clusters = clusterToDate(clusters, currClusters, type);
-
       }
 
       return clusters;
@@ -113,7 +114,7 @@ public class HClustering {
       List<ClusterDendogram> clusterL = new ArrayList<ClusterDendogram>();
 
       //clusters resulting from clustering the above clusters will be placed in
-      //clusters and this will prevent me from having to change the rest of this
+      //clusters and this will prevent me from having to refactor the rest of this
       //method.
       List<ClusterDendogram> clusters = new ArrayList<ClusterDendogram>();
 
@@ -167,7 +168,8 @@ public class HClustering {
 
    private List<ClusterDendogram> clusterGroup(List<ClusterDendogram> clusters, Cluster.distType type) {
       Point closeClusters = new Point(-1, -1);
-      double minDist = Double.MAX_VALUE;
+      //double minDist = Double.MAX_VALUE;
+      double minDist = 0;
       boolean hasChanged;
 
       do {
@@ -178,6 +180,7 @@ public class HClustering {
                Cluster cluster_A = clusters.get(clustOne).getCluster();
                Cluster cluster_B = clusters.get(clustTwo).getCluster();
                //double clustDist = cluster_A.distance(cluster_B, type);
+
                //this will ensure that i'm only comparing based on correlations
                double clustDist = cluster_A.corrDistance(cluster_B, type);
                /*
@@ -186,8 +189,12 @@ public class HClustering {
                }
                */
 
-               if (clustDist < minDist && clustDist > 99.7 ) {
                //if (clustDist < minDist && clustDist < .03 ) {
+               //if (clustDist < minDist && clustDist > 99.7 ) { this
+               //corresponds to results used in paper
+               //TODO  investigate the results for when you use '> minDist'
+               if (/*clustDist > minDist &&*/ clustDist > 99.7 ) {
+                  //this is equivalent to previous line unless '> minDist' is uncommented.
                   minDist = clustDist;
                   closeClusters = new Point(clustOne, clustTwo);
                }
