@@ -22,10 +22,7 @@ public class IsolateOutputWriter {
       for (ClusterDendogram clustDend : clustDends) {
          clusterNum++;
          //the new lines are to obviate the separation between clusters
-         cytoFormat += "\n\n";
          cytoFormat += clustDend.getCluster().toTemporalFormat(clusterNum);
-         //cytoFormat += clustDend.getCluster().toCytoscapeFormat();
-         cytoFormat += "\n\n";
       }
 
       try {

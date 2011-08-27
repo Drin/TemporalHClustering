@@ -510,17 +510,21 @@ public class Cluster {
          int day = Integer.parseInt(sampleName.substring(1, sampleName.indexOf("-")));
          //if isolate name is 'f14-1' then extract 1 as the isolateNum
          int isolateNum = Integer.parseInt(sampleName.substring(sampleName.indexOf("-") + 1, sampleName.length()));
+         String marker = ", X";
          
          //just so that we are adding to the correct map
          switch (sample.getSampleMethod()) {
             case FECAL:
                sampleMap = fecalMap;
+               marker = ", F";
                break;
             case IMM:
                sampleMap = immMap;
+               marker = ", I";
                break;
             case LATER:
                sampleMap = laterMap;
+               marker = ", L";
                break;
          }
 
@@ -536,14 +540,11 @@ public class Cluster {
 
          Map<Integer, String> tickMap = sampleMap.get(isolateNum);
 
-         tickMap.put(day, ", X");
+         tickMap.put(day, marker);
       }
 
-      tempOutput += String.format("\n%s\n%s\n%s%s\n%s%s\n%s%s\n",
-       "cluster_" + clusterNum, diagramHeader, "Fecal", toIsolateTable(fecalMap),
-                                   "Immediate", toIsolateTable(immMap),
-                                   "Later", toIsolateTable(laterMap)
-       );
+      tempOutput += String.format("%s\n%s\n%s%s%s\n", "cluster_" + clusterNum,
+       diagramHeader, toIsolateTable(fecalMap), toIsolateTable(immMap), toIsolateTable(laterMap));
 
       /*
        * auto generate some partially completed g.raphael bar chart code
@@ -566,6 +567,7 @@ public class Cluster {
       //for (int level = 1; sampleMap.containsKey(level); level++) {
       for (int level : sampleMap.keySet()) {
          Map<Integer, String> tickMap = sampleMap.get(level);
+
          for (int day : tickMap.keySet()) {
             tableOutput += tickMap.get(day);
          }
@@ -573,6 +575,7 @@ public class Cluster {
          tableOutput += "\n";
       }
 
+      //return hasOutput ? tableOutput : "";
       return tableOutput;
    }
    

@@ -40,6 +40,10 @@ public class DendogramNode implements Dendogram {
       return mLeft.toCluster().unionWith(mRight.toCluster());
    }
 
+   /*
+    * TODO gotta figure out how to make a diff format usable.
+    * specifically just CSV format with every node in a cluster to every node in.. OH do it in CLUSTER
+    */
    public String getXML() {
       String xmlStr = String.format("<tree correlation = \"%.02f\" >\n",
        mCorrelation);
