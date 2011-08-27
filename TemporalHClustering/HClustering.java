@@ -54,24 +54,35 @@ public class HClustering {
    public static void main(String[] args) {
       HClustering clusterer = new HClustering();
 
+      clusterer.cluster(args);
+   }
+
+   public boolean cluster(String[] args) {
+      boolean success = false;
       //handle command line arguments; sets dataFile and threshold
-      clusterer.parseArgs(args);
+      success = parseArgs(args);
 
       //each point is a cluster, and we will combine two clusters in each iteration
-      List<ClusterDendogram> clustDends = clusterer.clusterIsolates(clusterer.mDataFile,
-       clusterer.mLowerThreshold, clusterer.mUpperThreshold, clusterer.mClusterDistType);
+      List<ClusterDendogram> clustDends = clusterIsolates(mDataFile,
+       mLowerThreshold, mUpperThreshold, mClusterDistType);
       //System.err.println("clustDends length: " + clustDends.size());
 
+      //if the isolates yielded NO clusters (wtf data disappear?) or
+      //if clusterIsolates returned null, then this was *NOT* a success
+      success = clustDends != null && !clustDends.isEmpty();
+
       String outputFileDir = String.format("ClusterResults/%s_%.02f_%.02f",
-       clusterer.mClusterDistType, clusterer.mLowerThreshold, clusterer.mUpperThreshold);
+       mClusterDistType, mLowerThreshold, mUpperThreshold);
 
       String outputFileName = String.format("%s/%s.xml", outputFileDir,
-       clusterer.mDataFile.getName().substring(0,
-       clusterer.mDataFile.getName().indexOf(".csv")));
+       mDataFile.getName().substring(0,
+       mDataFile.getName().indexOf(".csv")));
 
       IsolateOutputWriter.outputClusters(clustDends, outputFileDir, outputFileName);
       IsolateOutputWriter.outputCytoscapeFormat(clustDends);
       IsolateOutputWriter.outputTemporalClusters(clustDends);
+
+      return success;
    }
 
    private List<ClusterDendogram> clusterIsolates(File dataFile, double lowerThreshold, double upperThreshold, Cluster.distType type) {
@@ -383,7 +394,7 @@ public class HClustering {
       return clusters;
    }
 
-   private void parseArgs(String[] args) {
+   private boolean parseArgs(String[] args) {
       if (args.length < 1 || args.length > 4) {
          System.out.println("Usage: java hclustering <Filename> [<lowerThreshold>] "+
           "[<upperThreshold>] [single|average|complete|ward]");
@@ -410,6 +421,8 @@ public class HClustering {
          System.out.printf("Invalid threshold values: %d and %d\n", args[1], args[2]);
          System.exit(1);
       }
+
+      return true;
    }
 
 }
