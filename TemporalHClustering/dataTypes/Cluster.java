@@ -235,8 +235,8 @@ public class Cluster {
 
             for (int dataNdx = 0; dataNdx < this.isolates.size(); dataNdx++) {
                for (int otherNdx = 0; otherNdx < otherCluster.isolates.size(); otherNdx++) {
-                  totalDist += IsolateDistance.findCorrelation(this.isolates.get(dataNdx),
                   //totalDist += 100 - IsolateDistance.findCorrelation(this.isolates.get(dataNdx),
+                  totalDist += IsolateDistance.findCorrelation(this.isolates.get(dataNdx),
                    otherCluster.isolates.get(otherNdx));
 
                   totalSize++;

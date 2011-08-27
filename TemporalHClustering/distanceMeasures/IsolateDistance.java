@@ -27,8 +27,10 @@ public class IsolateDistance {
          correlation = sample2.getCorrMap().get(sample1);
       }
       else {
-         //this is 101 because this method is only called by the above
-         //two methods. so this will propagate to be -1
+         //this *was* 101 because this method is only called by the above
+         //two methods. so this *would have* propagated to be -1
+         //however it seems I made it -1 as I have tried to make everything
+         //more explicit (and so it ends up propagating to be 101)
          correlation = -1;
          /*
          System.err.println("invalid mapping");
