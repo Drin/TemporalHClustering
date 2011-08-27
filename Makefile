@@ -15,3 +15,4 @@ parseData: dataParser
 clean:
 	rm -rf TemporalHClustering/*.class
 	rm -rf TemporalHClustering/*/*.class
+	rm -rf TemporalHClustering/*/*/*.class
