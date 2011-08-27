@@ -51,11 +51,13 @@ public class HClustering {
       mUpperThreshold = 99.7;
    }
 
+   /*
    public static void main(String[] args) {
       HClustering clusterer = new HClustering();
 
       clusterer.cluster(args);
    }
+   */
 
    public boolean cluster(String[] args) {
       boolean success = false;
@@ -74,13 +76,13 @@ public class HClustering {
       String outputFileDir = String.format("ClusterResults/%s_%.02f_%.02f",
        mClusterDistType, mLowerThreshold, mUpperThreshold);
 
-      String outputFileName = String.format("%s/%s.xml", outputFileDir,
+      String outputFileName = String.format("%s/%s", outputFileDir,
        mDataFile.getName().substring(0,
        mDataFile.getName().indexOf(".csv")));
 
-      IsolateOutputWriter.outputClusters(clustDends, outputFileDir, outputFileName);
-      IsolateOutputWriter.outputCytoscapeFormat(clustDends);
-      IsolateOutputWriter.outputTemporalClusters(clustDends);
+      IsolateOutputWriter.outputClusters(clustDends, outputFileDir, outputFileName + ".xml");
+      IsolateOutputWriter.outputCytoscapeFormat(clustDends, outputFileName);
+      IsolateOutputWriter.outputTemporalClusters(clustDends, outputFileName);
 
       return success;
    }

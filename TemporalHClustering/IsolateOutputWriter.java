@@ -14,8 +14,8 @@ import java.util.ArrayList;
 
 public class IsolateOutputWriter {
 
-   public static void outputTemporalClusters(List<ClusterDendogram> clustDends) {
-      String outFileName = "temporalDiagram.csv";
+   public static void outputTemporalClusters(List<ClusterDendogram> clustDends, String filePrefix) {
+      String outFileName = filePrefix + "_temporalDiagram.csv";
       String cytoFormat = "";
 
       int clusterNum = -1;
@@ -39,8 +39,8 @@ public class IsolateOutputWriter {
       }
    }
 
-   public static void outputCytoscapeFormat(List<ClusterDendogram> clustDends) {
-      String outFileName = "cytoscapeNetwork.txt";
+   public static void outputCytoscapeFormat(List<ClusterDendogram> clustDends, String filePrefix) {
+      String outFileName = filePrefix + "_cytoscapeNetwork.txt";
       String cytoFormat = Cluster.cytoscapeFormatHeader();
 
       int clusterNum = -1;
@@ -100,6 +100,12 @@ public class IsolateOutputWriter {
 
       try {
          File outputFile = new File(outFileName);
+         if (!outputFile.getParentFile().exists()) {
+            outputFile.getParentFile().mkdirs();
+         }
+         if (!outputFile.exists()) {
+            outputFile.createNewFile();
+         }
          BufferedWriter fileWriter = new BufferedWriter(new FileWriter(outputFile));
 
          fileWriter.write(clusterOutput);
