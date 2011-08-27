@@ -191,11 +191,8 @@ public class HClustering {
                }
                */
 
-<<<<<<< HEAD
-=======
                //System.out.println("ward's distance: " + clustDist);
-               if (clustDist < minDist && clustDist > 99.7 ) {
->>>>>>> dd22c84273c3e8ec887225b8336f4b885b5bb424
+               //if (clustDist < minDist && clustDist > 99.7 ) {
                //if (clustDist < minDist && clustDist < .03 ) {
                //if (clustDist < minDist && clustDist > 99.7 ) { this
                //corresponds to results used in paper
