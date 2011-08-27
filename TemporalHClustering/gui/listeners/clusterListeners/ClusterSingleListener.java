@@ -17,6 +17,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
+import javax.swing.BoxLayout;
 
 public class ClusterSingleListener implements ActionListener {
    private MainWindow mainFrame;
@@ -31,9 +32,10 @@ public class ClusterSingleListener implements ActionListener {
    }
    
    public void actionPerformed(ActionEvent e) {
-      System.out.println("action performed!");
       clusterDialog = new JDialog(mainFrame, "Cluster Single File");
       
+      clusterDialog.getContentPane().setLayout(
+       new BoxLayout(clusterDialog.getContentPane(), BoxLayout.PAGE_AXIS));
       clusterDialog.setModalityType(Dialog.ModalityType.APPLICATION_MODAL);
       clusterDialog.setMinimumSize(new Dimension(475,350));
       clusterDialog.setResizable(false);
@@ -41,6 +43,8 @@ public class ClusterSingleListener implements ActionListener {
       /*
        * Components to be added to Dialog
        */
+
+      //System.out.println("components initializing...");
 
       //File containing E.coli dissimilarity matrix
       JLabel fileNameLabel = new JLabel("E.coli data file:");
@@ -136,6 +140,8 @@ public class ClusterSingleListener implements ActionListener {
                 "Error occurred while clustering Data",
                 "Clustering Error", JOptionPane.ERROR_MESSAGE);
             }
+
+            System.out.println("HClustering completed");
             clusterDialog.dispose();
          }
       });
@@ -143,11 +149,18 @@ public class ClusterSingleListener implements ActionListener {
       /*
        * Adding all initialized components
        */
+      //System.out.println("adding components...");
       clusterDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+
       clusterDialog.add(fileNameLabel);
       clusterDialog.add(fileName);
       clusterDialog.add(fileBrowse);
       clusterDialog.add(cancelButton);
       clusterDialog.add(okayButton);
+
+      //System.out.println("components added.");
+
+      //show dialog
+      clusterDialog.setVisible(true);
    }
 }
