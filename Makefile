@@ -2,9 +2,13 @@ dataFile="data/PilotCorrelation.csv"
 
 compile:
 	javac TemporalHClustering/HClustering.java
+	javac TemporalHClustering/gui/ClusteringGUI.java
 
 run:
 	java TemporalHClustering/HClustering ${dataFile}
+
+runGUI:
+	java TemporalHClustering/gui/ClusteringGUI
 
 dataParser:
 	javac TemporalHClustering/dataParser/ParserDriver.java
@@ -16,3 +20,4 @@ clean:
 	rm -rf TemporalHClustering/*.class
 	rm -rf TemporalHClustering/*/*.class
 	rm -rf TemporalHClustering/*/*/*.class
+	rm -rf TemporalHClustering/*/*/*/*.class
