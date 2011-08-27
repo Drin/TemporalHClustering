@@ -2,6 +2,8 @@ dataFile="data/PilotCorrelation.csv"
 
 compile:
 	javac TemporalHClustering/HClustering.java
+
+compileGUI:
 	javac TemporalHClustering/gui/ClusteringGUI.java
 
 run:
