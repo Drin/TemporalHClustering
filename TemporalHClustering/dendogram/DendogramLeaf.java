@@ -52,6 +52,37 @@ public class DendogramLeaf implements Dendogram {
       return xmlStr;
    }
 
+   /*
+    * moving this stuff to cluster output.
+    *
+   public String getCytoscapeFormat() {
+      //column names
+      String column[] = new String[] {"e.coli_A", "e.coli_B", "interaction", "correlation"};
+      String interactionType = "pp";
+
+      //first row of output
+      String cytoStr = String.format("%s,\t%s,\t%s,\t%s\n",
+       column[0], column[1], column[2], column[3]);
+
+      cytoStr += String.format("%s,\t%s,\t%s,\t%.03f",
+       toString(), "", interactionType, mCorrelation);
+
+      return cytoStr;
+   }
+
+   /*
+    * This will return 3 things represented in an object:
+    *    The name of this isolate and it's correlation.. >__>
+    *       This goes at the top of the list to be returned
+    *    The interactions between this isolate and isolates in the children of this tree
+    *       This goes at the bottom of the list to be returned
+    *    The size of the tree including this one
+    *       This will be used to know how many 
+   public String toCytoscapeFormat() {
+      
+   }
+    */
+
 
    public String toXML(String spacing) {
       String xmlStr = String.format("%s<leaf correlation = \"%.02f\"" +

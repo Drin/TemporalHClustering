@@ -1,5 +1,6 @@
 package TemporalHClustering.dataTypes;
 
+import TemporalHClustering.dataTypes.SampleMethod;
 import TemporalHClustering.distanceMeasures.IsolateDistance;
 
 import java.util.Map;
@@ -39,6 +40,10 @@ public class IsolateSample {
 
    public int getDay() {
       return day;
+   }
+
+   public boolean hasCorr(IsolateSample otherIsolate) {
+      return mCorrMap.containsKey(otherIsolate);
    }
 
    public Map<IsolateSample, Double> getCorrMap() {

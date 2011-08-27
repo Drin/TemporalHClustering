@@ -1,10 +1,13 @@
 package TemporalHClustering.dataTypes;
 
 import TemporalHClustering.dataTypes.IsolateSample;
+import TemporalHClustering.dataTypes.SampleMethod;
 import TemporalHClustering.distanceMeasures.IsolateDistance;
 
 import java.util.List;
+import java.util.Map;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 
 //TODO it is possible to represent each data point (isolateSample)
 //as a point in n-dimensional space where n is the number of other isolates
@@ -197,6 +200,32 @@ public class Cluster {
 
             closestDist = totalDist/totalSize;
             break;
+
+         case WARD:
+            double wardDist = 0, wardSize = 0;
+
+            for (int dataNdx = 0; dataNdx < this.isolates.size(); dataNdx++) {
+               for (int otherNdx = 0; otherNdx < otherCluster.isolates.size(); otherNdx++) {
+                  wardDist += IsolateDistance.findCorrelation(this.isolates.get(dataNdx),
+                   otherCluster.isolates.get(otherNdx));
+
+                  wardSize++;
+               }
+            }
+
+            double avgCorrelation = wardDist/wardSize;
+
+            closestDist = 0;
+
+            for (int dataNdx = 0; dataNdx < this.isolates.size(); dataNdx++) {
+               for (int otherNdx = 0; otherNdx < otherCluster.isolates.size(); otherNdx++) {
+                  double correlation = IsolateDistance.findCorrelation(this.isolates.get(dataNdx),
+                   otherCluster.isolates.get(otherNdx));
+
+                  closestDist += (correlation - avgCorrelation) * (correlation - avgCorrelation);
+               }
+            }
+            break;
       }
 
       return closestDist;
@@ -206,7 +235,9 @@ public class Cluster {
       double closestDist = -1;
       switch(type) {
 
-         case SINGLE:
+         //this used to be SINGLE but then I realized that with correlations being 100 based
+         //instead of 0 based, it is actually COMPLETE 
+         case COMPLETE:
             closestDist = Double.MAX_VALUE;
 
             for (int dataNdx = 0; dataNdx < this.isolates.size(); dataNdx++) {
@@ -218,7 +249,9 @@ public class Cluster {
 
             break;
 
-         case COMPLETE:
+         //this used to be COMPLETE but then I realized that with correlations being 100 based
+         //instead of 0 based, it is actually SINGLE
+         case SINGLE:
             for (int dataNdx = 0; dataNdx < this.isolates.size(); dataNdx++) {
                for (int otherNdx = 0; otherNdx < otherCluster.isolates.size(); otherNdx++) {
                   closestDist = Math.max(closestDist, 100 - IsolateDistance.findCorrelation(
@@ -249,18 +282,40 @@ public class Cluster {
             closestDist = totalDist/totalSize;
             break;
 
+         case WARD:
+            double wardDist = 0, wardSize = 0;
+
+            for (int dataNdx = 0; dataNdx < this.isolates.size(); dataNdx++) {
+               for (int otherNdx = 0; otherNdx < otherCluster.isolates.size(); otherNdx++) {
+                  wardDist += IsolateDistance.findCorrelation(this.isolates.get(dataNdx),
+                   otherCluster.isolates.get(otherNdx));
+
+                  wardSize++;
+               }
+            }
+
+            double avgCorrelation = wardDist/wardSize;
+
+            closestDist = 0;
+
+            for (int dataNdx = 0; dataNdx < this.isolates.size(); dataNdx++) {
+               for (int otherNdx = 0; otherNdx < otherCluster.isolates.size(); otherNdx++) {
+                  double correlation = IsolateDistance.findCorrelation(this.isolates.get(dataNdx),
+                   otherCluster.isolates.get(otherNdx));
+
+                  closestDist += (correlation - avgCorrelation) * (correlation - avgCorrelation);
+               }
+            }
+            break;
+
          /*
-          * Neither of these cases apply since there is no centroid
+          * this case doesn't apply since there is no centroid
          case CENTROID:
             closestDist = distMode.evaluateDistance(
              this.centroid,
              otherCluster.centroid);
             break;
 
-         case WARD:
-            closestDist = this.unionWith(otherCluster).sumSquaredError -
-             (this.sumSquaredError + otherCluster.sumSquaredError);
-            break;
          */
       }
 
@@ -308,6 +363,31 @@ public class Cluster {
             closestDist = totalDist/totalSize;
             break;
 
+         case WARD:
+            double wardDist = 0, wardSize = 0;
+
+            for (int dataNdx = 0; dataNdx < this.isolates.size(); dataNdx++) {
+               for (int otherNdx = 0; otherNdx < otherCluster.isolates.size(); otherNdx++) {
+                  wardDist += IsolateDistance.getDistance(this.isolates.get(dataNdx),
+                   otherCluster.isolates.get(otherNdx));
+
+                  wardSize++;
+               }
+            }
+
+            double avgCorrelation = wardDist/wardSize;
+
+            closestDist = 0;
+
+            for (int dataNdx = 0; dataNdx < this.isolates.size(); dataNdx++) {
+               for (int otherNdx = 0; otherNdx < otherCluster.isolates.size(); otherNdx++) {
+                  double correlation = IsolateDistance.getDistance(this.isolates.get(dataNdx),
+                   otherCluster.isolates.get(otherNdx));
+
+                  closestDist += (correlation - avgCorrelation) * (correlation - avgCorrelation);
+               }
+            }
+            break;
          /*
           * Neither of these cases apply since there is no centroid
          case CENTROID:
@@ -354,11 +434,183 @@ public class Cluster {
       return str;
    }
 
+   public static String cytoscapeFormatHeader() {
+      String[] column = new String[] {"e.coli_A", "e.coli_B", "interaction", "correlation"};
+      String cytoFormat = String.format("%s\t%s\t%s\t%s\n",
+       column[0], column[1], column[2], column[3]);
+
+      return cytoFormat;
+   }
+
+   public String toCytoscapeCluster(String clusterName) {
+      String cytoFormat = "";
+
+      for (IsolateSample sample : isolates) {
+         cytoFormat += String.format("%s\t%s\n",
+          clusterName, sample);
+      }
+
+      return cytoFormat;
+   }
+
+   public String toCytoscapeFormat() {
+      String cytoFormat = "";
+      String interactionType = "pp";
+
+      if (isolates.size() == 1) {
+         return cytoFormat + String.format("%s\t%s\t%s\t%d\n",
+          isolates.get(0), isolates.get(0), interactionType, -1);
+      }
+
+      for (int srcNdx = 0; srcNdx < isolates.size(); srcNdx++) {
+         for (int dstNdx = srcNdx + 1; dstNdx < isolates.size(); dstNdx++) {
+            double isolateCorr = -1;
+
+            if (isolates.get(srcNdx).hasCorr(isolates.get(dstNdx))) {
+               //use source isolate's correlation map
+               Map<IsolateSample, Double> corrMap = isolates.get(srcNdx).getCorrMap();
+
+               cytoFormat += String.format("%s\t%s\t%s\t%.03f\n",
+                isolates.get(srcNdx), isolates.get(dstNdx), interactionType, corrMap.get(isolates.get(dstNdx)));
+            }
+            else if (isolates.get(dstNdx).hasCorr(isolates.get(srcNdx))) {
+               //use destination isolate's correlation map
+               Map<IsolateSample, Double> corrMap = isolates.get(dstNdx).getCorrMap();
+
+               cytoFormat += String.format("%s\t%s\t%s\t%.03f\n",
+                isolates.get(dstNdx), isolates.get(srcNdx), interactionType, corrMap.get(isolates.get(srcNdx)));
+            }
+
+         }
+      }
+
+      return cytoFormat;
+   }
+
+   public String toTemporalFormat(int clusterNum) {
+      String tempOutput = "";
+      int numDays = 14;
+
+      //will display Day:, 1, 2, 3, ... for csv formatted temporal diagram
+      String diagramHeader = "Day:";
+      for (int day = 1; day <= numDays; day++) {
+         diagramHeader += ", " + day;
+      }
+
+      //map representing isolateNum -> {days -> String}
+      Map<Integer, Map<Integer, String>> fecalMap = new LinkedHashMap<Integer, Map<Integer, String>>();
+      Map<Integer, Map<Integer, String>> immMap = new LinkedHashMap<Integer, Map<Integer, String>>();
+      Map<Integer, Map<Integer, String>> laterMap = new LinkedHashMap<Integer, Map<Integer, String>>();
+
+      for (IsolateSample sample : isolates) {
+         Map<Integer, Map<Integer, String>> sampleMap = null;
+
+         String sampleName = sample.getName();
+         //if isolate name is 'f14-1' then extract 14 as the day
+         int day = Integer.parseInt(sampleName.substring(1, sampleName.indexOf("-")));
+         //if isolate name is 'f14-1' then extract 1 as the isolateNum
+         int isolateNum = Integer.parseInt(sampleName.substring(sampleName.indexOf("-") + 1, sampleName.length()));
+         String marker = ", X";
+         
+         //just so that we are adding to the correct map
+         switch (sample.getSampleMethod()) {
+            case FECAL:
+               sampleMap = fecalMap;
+               marker = ", F";
+               break;
+            case IMM:
+               sampleMap = immMap;
+               marker = ", I";
+               break;
+            case LATER:
+               sampleMap = laterMap;
+               marker = ", L";
+               break;
+         }
+
+         if (!sampleMap.containsKey(isolateNum)) {
+            Map<Integer, String> newTickMap = new LinkedHashMap<Integer, String>();
+
+            for (int dayCol = 1; dayCol <= numDays; dayCol++) {
+               newTickMap.put(dayCol, ", ");
+            }
+
+            sampleMap.put(isolateNum, newTickMap);
+         }
+
+         Map<Integer, String> tickMap = sampleMap.get(isolateNum);
+
+         tickMap.put(day, marker);
+      }
+
+      tempOutput += String.format("%s\n%s\n%s%s%s\n", "cluster_" + clusterNum,
+       diagramHeader, toIsolateTable(fecalMap), toIsolateTable(immMap), toIsolateTable(laterMap));
+
+      /*
+       * auto generate some partially completed g.raphael bar chart code
+      String barOptions = "{stacked: true, type: \"soft\"}).hoverColumn(fin2, fout2);";
+
+      System.out.println(String.format("r.g.barchart(%d, %d, 400, 220, [%s], %s",
+       (450 * (clusterNum % 2)), (50 + (220 * (clusterNum / 2))), toIsolateBars(fecalMap), barOptions));
+      System.out.println(String.format("r.g.barchart(%d, %d, 400, 220, [%s], %s",
+       (450 * (clusterNum % 2)), (50 + (220 * (clusterNum / 2))), toIsolateBars(immMap), barOptions));
+      System.out.println(String.format("r.g.barchart(%d, %d, 400, 220, [%s], %s",
+       (450 * (clusterNum % 2)), (50 + (220 * (clusterNum / 2))), toIsolateBars(laterMap), barOptions));
+       */
+
+      return tempOutput;
+   }
+
+   private String toIsolateTable(Map<Integer, Map<Integer, String>> sampleMap) {
+      String tableOutput = "";
+
+      //for (int level = 1; sampleMap.containsKey(level); level++) {
+      for (int level : sampleMap.keySet()) {
+         Map<Integer, String> tickMap = sampleMap.get(level);
+
+         for (int day : tickMap.keySet()) {
+            tableOutput += tickMap.get(day);
+         }
+
+         tableOutput += "\n";
+      }
+
+      //return hasOutput ? tableOutput : "";
+      return tableOutput;
+   }
+   
+   private String toIsolateBars(Map<Integer, Map<Integer, String>> sampleMap) {
+      String barOutput = "";
+
+      //for (int level = 1; sampleMap.containsKey(level); level++) {
+      for (int level : sampleMap.keySet()) {
+         //System.err.println("level: " + level);
+         if (level > 1) {
+            barOutput += ",\n";
+         }
+
+         Map<Integer, String> tickMap = sampleMap.get(level);
+         barOutput += "[";
+         for (int day: tickMap.keySet()) {
+            if (day > 1) {
+               barOutput += tickMap.get(day).equals(", X") ? ", 1" : ", 0";
+            }
+            else {
+               barOutput += tickMap.get(day).equals(", X") ? "1" : "0";
+            }
+         }
+
+         barOutput += "]";
+      }
+      
+      return barOutput;
+   }
+
    public enum distType {
       SINGLE,
       COMPLETE,
-      AVERAGE
+      AVERAGE,
       //CENTROID,
-      //WARD
+      WARD
    }
 }

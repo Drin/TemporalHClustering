@@ -1,5 +1,6 @@
 package TemporalHClustering;
 
+import TemporalHClustering.dataTypes.Cluster;
 import TemporalHClustering.dataTypes.ClusterDendogram;
 import TemporalHClustering.dataTypes.IsolateSample;
 import TemporalHClustering.distanceMeasures.IsolateDistance;
@@ -12,6 +13,59 @@ import java.util.List;
 import java.util.ArrayList;
 
 public class IsolateOutputWriter {
+
+   public static void outputTemporalClusters(List<ClusterDendogram> clustDends) {
+      String outFileName = "temporalDiagram.csv";
+      String cytoFormat = "";
+
+      int clusterNum = -1;
+      for (ClusterDendogram clustDend : clustDends) {
+         clusterNum++;
+         //the new lines are to obviate the separation between clusters
+         cytoFormat += clustDend.getCluster().toTemporalFormat(clusterNum);
+      }
+
+      try {
+         File outputFile = new File(outFileName);
+         BufferedWriter fileWriter = new BufferedWriter(new FileWriter(outputFile));
+
+         fileWriter.write(cytoFormat);
+         fileWriter.close();
+      }
+      catch(Exception e1) {
+         //System.out.println("Error writing cluster to file");
+         e1.printStackTrace();
+         System.exit(1);
+      }
+   }
+
+   public static void outputCytoscapeFormat(List<ClusterDendogram> clustDends) {
+      String outFileName = "cytoscapeNetwork.txt";
+      String cytoFormat = Cluster.cytoscapeFormatHeader();
+
+      int clusterNum = -1;
+      for (ClusterDendogram clustDend : clustDends) {
+         clusterNum++;
+         //the new lines are to obviate the separation between clusters
+         cytoFormat += "\n\n\n";
+         cytoFormat += clustDend.getCluster().toCytoscapeCluster("Cluster_" + clusterNum);
+         //cytoFormat += clustDend.getCluster().toCytoscapeFormat();
+         cytoFormat += "\n\n\n";
+      }
+
+      try {
+         File outputFile = new File(outFileName);
+         BufferedWriter fileWriter = new BufferedWriter(new FileWriter(outputFile));
+
+         fileWriter.write(cytoFormat);
+         fileWriter.close();
+      }
+      catch(Exception e1) {
+         //System.out.println("Error writing cluster to file");
+         e1.printStackTrace();
+         System.exit(1);
+      }
+   }
 
    public static void outputClustersByDay(int sampleDay, List<ClusterDendogram> clustDends) {
       String outFileName = "ClusterDays/clustersByDay" + sampleDay + ".xml";
