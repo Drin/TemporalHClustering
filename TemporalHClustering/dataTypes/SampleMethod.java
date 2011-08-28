@@ -10,13 +10,14 @@ public enum SampleMethod {
    /*
     * fecal value = 0
     * immediate value = 1
-    * later value = 3;
+    * later value = 3
+    * deep value = 7;
     * These values are used to represent temporal proximity
     * between the different sampling methods.
     * fecal and immediate are closest to each other
     * while later is closest only to immediate
     */
-   FECAL('f', 0), IMM('i', 1), LATER('l', 3);
+   FECAL('f', 0), IMM('i', 1), LATER('l', 3), DEEP('d', 7);
 
    private char mEncoding;
    private int mValue;
@@ -46,6 +47,8 @@ public enum SampleMethod {
             return "Immediate";
          case 'l':
             return "Later";
+         case 'd':
+            return "Deep";
          default:
             return "Unknown";
       }
@@ -59,6 +62,8 @@ public enum SampleMethod {
             return IMM;
          case 'l':
             return LATER;
+         case 'd':
+            return DEEP;
          default:
             System.err.println("Invalid Isolate encoding: " + encoding);
             return null;
