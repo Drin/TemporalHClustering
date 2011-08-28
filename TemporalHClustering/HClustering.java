@@ -4,6 +4,7 @@ import TemporalHClustering.dataParser.IsolateFileParser;
 import TemporalHClustering.dataTypes.Cluster;
 import TemporalHClustering.dataTypes.ClusterDendogram;
 import TemporalHClustering.dataTypes.IsolateSample;
+import TemporalHClustering.dataTypes.IsolateRegion;
 import TemporalHClustering.distanceMeasures.IsolateDistance;
 import TemporalHClustering.dendogram.Dendogram;
 import TemporalHClustering.dendogram.DendogramNode;
@@ -43,6 +44,7 @@ import java.awt.Point;
  */
 public class HClustering {
    private Cluster.distType mClusterDistType;
+   private IsolateRegion mRegion;
    private double mLowerThreshold, mUpperThreshold;
    private File mDataFile = null;
 
@@ -51,13 +53,11 @@ public class HClustering {
       mUpperThreshold = 99.7;
    }
 
-   /*
    public static void main(String[] args) {
       HClustering clusterer = new HClustering();
 
       clusterer.cluster(args);
    }
-   */
 
    public boolean cluster(String[] args) {
       boolean success = false;
@@ -127,6 +127,7 @@ public class HClustering {
       List<ClusterDendogram> clusterI = new ArrayList<ClusterDendogram>();
       //represent later samples
       List<ClusterDendogram> clusterL = new ArrayList<ClusterDendogram>();
+      List<ClusterDendogram> clusterD = new ArrayList<ClusterDendogram>();
 
       //clusters resulting from clustering the above clusters will be placed in
       //clusters and this will prevent me from having to refactor the rest of this
@@ -147,6 +148,9 @@ public class HClustering {
             case LATER:
                clusterL.add(new ClusterDendogram(newCluster, newDendogram));
                break;
+            case DEEP:
+               clusterD.add(new ClusterDendogram(newCluster, newDendogram));
+               break;
             default:
                System.err.println("serious error here");
                break;
@@ -158,6 +162,7 @@ public class HClustering {
       clusterF = clusterGroup(clusterF, type);
       clusterI = clusterGroup(clusterI, type);
       clusterL = clusterGroup(clusterL, type);
+      clusterD = clusterGroup(clusterD, type);
 
 
       //cluster each group together:
@@ -172,6 +177,9 @@ public class HClustering {
       clusters = clusterGroup(clusters, type);
 
       clusters.addAll(clusterL);
+      clusters = clusterGroup(clusters, type);
+
+      clusters.addAll(clusterD);
       clusters = clusterGroup(clusters, type);
 
       //clusters within all the day's clusters
@@ -398,15 +406,24 @@ public class HClustering {
 
    private boolean parseArgs(String[] args) {
       if (args.length < 1 || args.length > 4) {
-         System.out.println("Usage: java hclustering <Filename> [<lowerThreshold>] "+
+         System.out.println("Usage: java hclustering <Filename> [16s-23s|23s-5s] [<lowerThreshold>] "+
           "[<upperThreshold>] [single|average|complete|ward]");
          System.exit(1);
       }
 
       try {
          mDataFile = new File(args[0]);
-         mLowerThreshold = args.length >= 2 ? Double.parseDouble(args[1]) : mLowerThreshold;
-         mUpperThreshold = args.length >= 3 ? Double.parseDouble(args[2]) : mUpperThreshold;
+
+         if (args.length >= 2) {
+            mRegion = IsolateRegion.getRegion(args[1]);
+            if (mRegion == null) {
+               System.err.println("Invalid isolate region. exiting...");
+               System.exit(1);
+            }
+         }
+
+         mLowerThreshold = args.length >= 3 ? Double.parseDouble(args[2]) : mLowerThreshold;
+         mUpperThreshold = args.length >= 4 ? Double.parseDouble(args[3]) : mUpperThreshold;
 
          //use reflection for distance measure
          /*
@@ -415,12 +432,12 @@ public class HClustering {
           new EuclideanDistanceMeasure();
           */
 
-         mClusterDistType = args.length >= 4 ?
-          Cluster.distType.valueOf(args[3].toUpperCase()) : Cluster.distType.AVERAGE;
+         mClusterDistType = args.length >= 5 ?
+          Cluster.distType.valueOf(args[4].toUpperCase()) : Cluster.distType.AVERAGE;
 
       }
       catch (NumberFormatException formatErr) {
-         System.out.printf("Invalid threshold values: %d and %d\n", args[1], args[2]);
+         System.out.printf("Invalid threshold values: %d and %d\n", args[2], args[3]);
          System.exit(1);
       }
 

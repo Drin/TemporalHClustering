@@ -46,7 +46,7 @@ public class IsolateFileParser {
          for (int isolateNdx = 1; isolateNdx < isolateTuple.length; isolateNdx++) {
             //the first column is empty, every other column will have the name of an isolate
             IsolateSample newIsolate =
-             new IsolateSample(isolateTuple[isolateNdx].replaceAll("\"", ""));
+             new IsolateSample(isolateTuple[isolateNdx].replaceAll("\"", "").toLowerCase());
 
             isolateIdMap.put(isolateNdx - 1, newIsolate);
             if (!dataMap.containsKey(newIsolate.getDay())) {
@@ -58,7 +58,7 @@ public class IsolateFileParser {
       /*
        * create correlations between Isolate Samples
        */
-      for (int tupleNdx = 0; fileParser.hasNextLine(); tupleNdx++) {
+      for (int tupleNdx = 0; fileParser.hasNextLine() && tupleNdx < isolateIdMap.size(); tupleNdx++) {
          HashMap<IsolateSample, Double> corrMap = new HashMap<IsolateSample, Double>();
          String[] tuplesString = fileParser.nextLine().replaceAll(" ", "").split(",");
          //double[] tuple = new double[tuplesString.length - 1];

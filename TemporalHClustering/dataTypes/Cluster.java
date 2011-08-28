@@ -501,6 +501,7 @@ public class Cluster {
       Map<Integer, Map<Integer, String>> fecalMap = new LinkedHashMap<Integer, Map<Integer, String>>();
       Map<Integer, Map<Integer, String>> immMap = new LinkedHashMap<Integer, Map<Integer, String>>();
       Map<Integer, Map<Integer, String>> laterMap = new LinkedHashMap<Integer, Map<Integer, String>>();
+      Map<Integer, Map<Integer, String>> deepMap = new LinkedHashMap<Integer, Map<Integer, String>>();
 
       for (IsolateSample sample : isolates) {
          Map<Integer, Map<Integer, String>> sampleMap = null;
@@ -526,6 +527,9 @@ public class Cluster {
                sampleMap = laterMap;
                marker = ", L";
                break;
+            case DEEP:
+               sampleMap = deepMap;
+               marker = ", D";
          }
 
          if (!sampleMap.containsKey(isolateNum)) {
@@ -543,8 +547,8 @@ public class Cluster {
          tickMap.put(day, marker);
       }
 
-      tempOutput += String.format("%s\n%s\n%s%s%s\n", "cluster_" + clusterNum,
-       diagramHeader, toIsolateTable(fecalMap), toIsolateTable(immMap), toIsolateTable(laterMap));
+      tempOutput += String.format("%s\n%s\n%s%s%s%s\n", "cluster_" + clusterNum,
+       diagramHeader, toIsolateTable(fecalMap), toIsolateTable(immMap), toIsolateTable(laterMap), toIsolateTable(deepMap));
 
       /*
        * auto generate some partially completed g.raphael bar chart code

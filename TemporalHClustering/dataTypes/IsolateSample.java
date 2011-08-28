@@ -13,6 +13,11 @@ public class IsolateSample {
 
    public IsolateSample(String name) {
       mIsolateName = name;
+      if (mIsolateName.charAt(0) == 'a' ||
+          mIsolateName.charAt(0) == 'b' ||
+          mIsolateName.charAt(0) == 'c') {
+         mIsolateName = mIsolateName.substring(1);
+      }
       mGroup = SampleMethod.getMethod(mIsolateName.charAt(0));
       /*
        * grabs the integer that is between the method encoding (f | i | l) and
