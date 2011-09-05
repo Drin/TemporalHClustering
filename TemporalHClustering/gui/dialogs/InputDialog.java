@@ -1,7 +1,7 @@
 package TemporalHClustering.gui.dialogs;
 
-//import TemporalHClustering.HClustering;
-//import TemporalHClustering.gui.MainWindow;
+import TemporalHClustering.HClustering;
+import TemporalHClustering.gui.MainWindow;
 
 import java.io.File;
 
@@ -13,6 +13,8 @@ import java.awt.event.ActionListener;
 
 import java.util.Map;
 import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.Enumeration;
 
 import java.awt.Component;
@@ -189,11 +191,12 @@ public class InputDialog extends JDialog {
             //basic validation
             System.out.println("calling HClustering...");
             
-            //HClustering clusterer = new HClustering();
+            HClustering clusterer = new HClustering();
 
             /*
              * args for clusterer consist of:
              *    String filename - a file name
+             *    String regionname - name of the ITS region represented
              *    String lowerThreshold - a double value
              *    String upperThreshold - a double value
              *    one option from:
@@ -202,6 +205,7 @@ public class InputDialog extends JDialog {
              *       Complete
              *       Ward
              * argument 1 (filename) is *MANDATORY*
+             * argument 2 (region name) is *MANDATORY*
              * argument 2 defaults to 95% similarity
              * argument 3 defaults to 99.7% similarity
              * argument 4 defaults to Average similarity distance
@@ -210,15 +214,71 @@ public class InputDialog extends JDialog {
             /*
              * preparing arguments for clusterer
              */
-            int numArgsDefined = 1; //change this depending on the try catch below: 1 is the minimum
-            String[] args = new String[1];
+            ArrayList<String> args = new ArrayList<String>();
 
             try {
-               JRadioButton firstRegion = (JRadioButton) firstDataRegion.getSelection();
-               JRadioButton secondRegion = (JRadioButton) secondDataRegion.getSelection();
+               JRadioButton firstRegion = null, secondRegion = null;
+               Enumeration regionSelection = firstDataRegion.getElements();
 
-               args[0] = String.format("%s:%s", firstDataFile.getText(), firstRegion.getText());
-               args[1] = String.format("%s:%s", secondDataFile.getText(), secondRegion.getText());
+               while (regionSelection.hasMoreElements()) {
+                  JRadioButton tmpRadio = (JRadioButton) regionSelection.nextElement();
+
+                  if (tmpRadio.isSelected()) {
+                     firstRegion = tmpRadio;
+                  }
+               }
+
+               regionSelection = secondDataRegion.getElements();
+
+               while (regionSelection.hasMoreElements()) {
+                  JRadioButton tmpRadio = (JRadioButton) regionSelection.nextElement();
+
+                  if (tmpRadio.isSelected()) {
+                     secondRegion = tmpRadio;
+                  }
+               }
+
+               if (firstRegion != null && secondRegion != null &&
+                firstRegion.getText().equals(secondRegion.getText())) {
+                  JOptionPane.showMessageDialog(mOwner,
+                   "Invalid regions selected: Please select different regions for each input data",
+                   "Invalid Options", JOptionPane.ERROR_MESSAGE);
+                  return;
+               }
+               if (firstDataFile.getText().equals(secondDataFile.getText())) {
+                  int selectedOption = JOptionPane.showConfirmDialog(mOwner,
+                   "Same file input for both regions. Are you sure?",
+                   "Duplicate input confirmation", JOptionPane.YES_NO_OPTION);
+
+                  if (selectedOption == JOptionPane.NO_OPTION) {
+                     JOptionPane.showMessageDialog(mOwner,
+                      "Clustering cancelled",
+                      "Cancelled", JOptionPane.INFORMATION_MESSAGE);
+                     return;
+                  }
+               }
+
+               if (!firstDataFile.getText().equals("") && firstRegion != null) {
+                  args.add(String.format("%s:%s", firstDataFile.getText(), firstRegion.getText()));
+               }
+               else if (!firstDataFile.getText().equals("") || firstRegion != null) {
+                  JOptionPane.showMessageDialog(mOwner,
+                   "Invalid parameters for first data input",
+                   "Invalid Options", JOptionPane.ERROR_MESSAGE);
+
+                  return;
+               }
+
+               if (!secondDataFile.getText().equals("") && secondRegion != null) {
+                  args.add(String.format("%s:%s", secondDataFile.getText(), secondRegion.getText()));
+               }
+               else if (!secondDataFile.getText().equals("") || secondRegion != null) {
+                  JOptionPane.showMessageDialog(mOwner,
+                   "Invalid parameters for second data input",
+                   "Invalid Options", JOptionPane.ERROR_MESSAGE);
+
+                  return;
+               }
             }
             catch (NullPointerException emptyValErr) {
                //System.err.println("No file was selected");
@@ -228,8 +288,7 @@ public class InputDialog extends JDialog {
             }
 
             //Should write files somewhere
-            /*
-            if (clusterer.cluster(args)) {
+            if (clusterer.cluster((String[]) args.toArray())) {
                JOptionPane.showMessageDialog(mOwner,
                 "Clustering complete",
                 "Clustering completed", JOptionPane.INFORMATION_MESSAGE);
@@ -238,8 +297,9 @@ public class InputDialog extends JDialog {
                JOptionPane.showMessageDialog(mOwner,
                 "Error occurred while clustering Data",
                 "Clustering Error", JOptionPane.ERROR_MESSAGE);
+
+               return;
             }
-            */
 
             System.out.println("HClustering completed");
             dispose();
