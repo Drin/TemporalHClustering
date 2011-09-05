@@ -2,6 +2,7 @@ package TemporalHClustering.gui.listeners.clusterListeners;
 
 import TemporalHClustering.HClustering;
 import TemporalHClustering.gui.MainWindow;
+import TemporalHClustering.gui.dialogs.InputDialog;
 
 import java.io.File;
 
@@ -21,7 +22,7 @@ import javax.swing.BoxLayout;
 
 public class ClusterSingleListener implements ActionListener {
    private MainWindow mainFrame;
-   private JDialog clusterDialog;
+   private InputDialog clusterDialog;
    private JTextField fileName;
    private JButton okayButton, cancelButton, fileBrowse;
    private String recentlyAccessedDir = "";
@@ -32,8 +33,9 @@ public class ClusterSingleListener implements ActionListener {
    }
    
    public void actionPerformed(ActionEvent e) {
-      clusterDialog = new JDialog(mainFrame, "Cluster Single File");
+      clusterDialog = new InputDialog(mainFrame, "Cluster Single File");
       
+      /*
       clusterDialog.getContentPane().setLayout(
        new BoxLayout(clusterDialog.getContentPane(), BoxLayout.PAGE_AXIS));
       clusterDialog.setModalityType(Dialog.ModalityType.APPLICATION_MODAL);
@@ -42,7 +44,7 @@ public class ClusterSingleListener implements ActionListener {
 
       /*
        * Components to be added to Dialog
-       */
+       *
 
       //System.out.println("components initializing...");
 
@@ -111,11 +113,11 @@ public class ClusterSingleListener implements ActionListener {
              * argument 2 defaults to 95% similarity
              * argument 3 defaults to 99.7% similarity
              * argument 4 defaults to Average similarity distance
-             */
+             *
 
             /*
              * preparing arguments for clusterer
-             */
+             *
             int numArgsDefined = 1; //change this depending on the try catch below: 1 is the minimum
             String[] args = new String[1];
 
@@ -148,7 +150,7 @@ public class ClusterSingleListener implements ActionListener {
 
       /*
        * Adding all initialized components
-       */
+       *
       //System.out.println("adding components...");
       clusterDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 
@@ -159,6 +161,7 @@ public class ClusterSingleListener implements ActionListener {
       clusterDialog.add(okayButton);
 
       //System.out.println("components added.");
+      /*/
 
       //show dialog
       clusterDialog.setVisible(true);

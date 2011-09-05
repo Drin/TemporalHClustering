@@ -1,5 +1,7 @@
 package TemporalHClustering.dendogram;
 
+import TemporalHClustering.dataStructures.IsolateSimilarityMatrix;
+
 import TemporalHClustering.dataTypes.Cluster;
 
 import java.util.List;
@@ -36,8 +38,8 @@ public class DendogramNode implements Dendogram {
       return mRight;
    }
 
-   public Cluster toCluster() {
-      return mLeft.toCluster().unionWith(mRight.toCluster());
+   public Cluster toCluster(IsolateSimilarityMatrix matrix) {
+      return mLeft.toCluster(matrix).unionWith(mRight.toCluster(matrix));
    }
 
    /*

@@ -1,14 +1,19 @@
 package TemporalHClustering;
 
 import TemporalHClustering.dataParser.IsolateFileParser;
+
+import TemporalHClustering.dataTypes.FileSettings;
 import TemporalHClustering.dataTypes.Cluster;
 import TemporalHClustering.dataTypes.ClusterDendogram;
-import TemporalHClustering.dataTypes.IsolateSample;
+import TemporalHClustering.dataTypes.Isolate;
 import TemporalHClustering.dataTypes.IsolateRegion;
-import TemporalHClustering.distanceMeasures.IsolateDistance;
+
+import TemporalHClustering.dataStructures.IsolateSimilarityMatrix;
+
 import TemporalHClustering.dendogram.Dendogram;
 import TemporalHClustering.dendogram.DendogramNode;
 import TemporalHClustering.dendogram.DendogramLeaf;
+
 import TemporalHClustering.IsolateOutputWriter;
 
 import java.io.BufferedWriter;
@@ -47,10 +52,15 @@ public class HClustering {
    private IsolateRegion mRegion;
    private double mLowerThreshold, mUpperThreshold;
    private File mDataFile = null;
+   private Map<File, FileSettings> dataFileMap;
+   private IsolateSimilarityMatrix similarityMatrix;
+   private double mThresholding = 6.5;
 
    public HClustering() {
       mLowerThreshold = 95;
       mUpperThreshold = 99.7;
+      dataFileMap = new HashMap<File, FileSettings>();
+      similarityMatrix = new IsolateSimilarityMatrix();
    }
 
    public static void main(String[] args) {
@@ -64,46 +74,55 @@ public class HClustering {
       //handle command line arguments; sets dataFile and threshold
       success = parseArgs(args);
 
-      //each point is a cluster, and we will combine two clusters in each iteration
-      List<ClusterDendogram> clustDends = clusterIsolates(mDataFile,
-       mLowerThreshold, mUpperThreshold, mClusterDistType);
-      //System.err.println("clustDends length: " + clustDends.size());
+      for (File dataFile : dataFileMap.keySet()) {
+         FileSettings settings = dataFileMap.get(dataFile);
 
-      //if the isolates yielded NO clusters (wtf data disappear?) or
-      //if clusterIsolates returned null, then this was *NOT* a success
-      success = clustDends != null && !clustDends.isEmpty();
+         //each point is a cluster, and we will combine two clusters in each iteration
+         List<ClusterDendogram> clustDends = clusterIsolates(dataFile, settings);
+         //System.err.println("clustDends length: " + clustDends.size());
 
-      String outputFileDir = String.format("ClusterResults/%s_%.02f_%.02f",
-       mClusterDistType, mLowerThreshold, mUpperThreshold);
+         //if the isolates yielded NO clusters (wtf data disappear?) or
+         //if clusterIsolates returned null, then this was *NOT* a success
+         success = clustDends != null && !clustDends.isEmpty();
 
-      String outputFileName = String.format("%s/%s", outputFileDir,
-       mDataFile.getName().substring(0,
-       mDataFile.getName().indexOf(".csv")));
+         String outputFileDir = String.format("ClusterResults/%s_%.02f_%.02f",
+          settings.getDistanceType(), settings.getLowerThreshold(), settings.getUpperThreshold());
 
-      IsolateOutputWriter.outputClusters(clustDends, outputFileDir, outputFileName + ".xml");
-      IsolateOutputWriter.outputCytoscapeFormat(clustDends, outputFileName);
-      IsolateOutputWriter.outputTemporalClusters(clustDends, outputFileName);
+         String outputFileName = String.format("%s/%s", outputFileDir,
+          dataFile.getName().substring(0,
+          dataFile.getName().indexOf(".csv")));
+
+         IsolateOutputWriter.outputClusters(clustDends, outputFileDir, outputFileName + ".xml");
+         IsolateOutputWriter.outputCytoscapeFormat(clustDends, outputFileName);
+         IsolateOutputWriter.outputTemporalClusters(clustDends, outputFileName);
+      }
 
       return success;
    }
 
-   private List<ClusterDendogram> clusterIsolates(File dataFile, double lowerThreshold, double upperThreshold, Cluster.distType type) {
+   private List<ClusterDendogram> clusterIsolates(File dataFile, FileSettings settings) {
+      IsolateRegion region = settings.getRegion();
+      double lowerThreshold = settings.getLowerThreshold();
+      double upperThreshold = settings.getUpperThreshold();
+      Cluster.distType type = settings.getDistanceType();
       //mappings represent days to isolates
-      Map<Integer, List<IsolateSample>> isolateMap = null;
+      Map<Integer, List<Isolate>> isolateMap = null;
       //list of all constructed clusters
       List<ClusterDendogram> clusters = new ArrayList<ClusterDendogram>();
 
       if (dataFile != null) {
-         IsolateFileParser parser = new IsolateFileParser(dataFile, lowerThreshold, upperThreshold);
+         IsolateFileParser parser = new IsolateFileParser(dataFile, region, lowerThreshold, upperThreshold);
 
-         isolateMap = parser.extractData();
+         //TODO how to be sure that both regions are used for an overall
+         //similarity between isolates?
+         isolateMap = parser.extractData(similarityMatrix);
       }
 
       for (int sampleDay : isolateMap.keySet()) {
          //Cluster the list of isolates in this day
          List<ClusterDendogram> currClusters = clusterIsolateList(isolateMap.get(sampleDay), type);
 
-         IsolateOutputWriter.outputClustersByDay(sampleDay, currClusters);
+         IsolateOutputWriter.outputClustersByDay(similarityMatrix, sampleDay, currClusters);
          /*
          System.err.println("currClusters length: " + currClusters.size());
          /*
@@ -120,7 +139,7 @@ public class HClustering {
       return clusters;
    }
 
-   private List<ClusterDendogram> clusterIsolateList(List<IsolateSample> isolates, Cluster.distType type) {
+   private List<ClusterDendogram> clusterIsolateList(List<Isolate> isolates, Cluster.distType type) {
       //represent fecal samples
       List<ClusterDendogram> clusterF = new ArrayList<ClusterDendogram>();
       //represent immediate (after) samples
@@ -134,8 +153,8 @@ public class HClustering {
       //method.
       List<ClusterDendogram> clusters = new ArrayList<ClusterDendogram>();
 
-      for (IsolateSample sample : isolates) {
-         Cluster newCluster = new Cluster(sample);
+      for (Isolate sample : isolates) {
+         Cluster newCluster = new Cluster(similarityMatrix, sample);
          Dendogram newDendogram = new DendogramLeaf(sample);
 
          switch(sample.getSampleMethod()) {
@@ -218,7 +237,10 @@ public class HClustering {
                //if (clustDist < minDist && clustDist > 99.7 ) { this
                //corresponds to results used in paper
                //TODO  investigate the results for when you use '> minDist'
-               if (/*clustDist > minDist &&*/ clustDist > 99.7 ) {
+               //if (/*clustDist > minDist &&*/ clustDist > 99.7 ) {
+               System.out.printf("clustDist: %.03f\n", clustDist);
+
+               if (clustDist > minDist && clustDist > mThresholding ) {
                   //this is equivalent to previous line unless '> minDist' is uncommented.
                   minDist = clustDist;
                   closeClusters = new Point(clustOne, clustTwo);
@@ -369,7 +391,8 @@ public class HClustering {
       for (ClusterDendogram newClusterDend : dailyClusters) {
          Cluster newCluster = newClusterDend.getCluster();
 
-         double minDist = Double.MAX_VALUE;
+         //double minDist = Double.MAX_VALUE;
+         double minDist = 0;
          int closeClusterNdx = -1;
 
          for (int clustNdx = 0; clustNdx < clusters.size(); clustNdx++) {
@@ -378,7 +401,8 @@ public class HClustering {
 
             //if (clustDist < minDist && clustDist < mLowerThreshold) {
             //System.out.println("cluster to date ward's distance: " + clustDist);
-            if (clustDist < minDist && clustDist >= mUpperThreshold) {
+            //if (clustDist < minDist && clustDist >= mUpperThreshold) {
+            if (clustDist > minDist && clustDist > mThresholding) {
                minDist = clustDist;
                closeClusterNdx = clustNdx;
             }
@@ -405,36 +429,50 @@ public class HClustering {
    }
 
    private boolean parseArgs(String[] args) {
-      if (args.length < 1 || args.length > 4) {
-         System.out.println("Usage: java hclustering <Filename> [16s-23s|23s-5s] [<lowerThreshold>] "+
-          "[<upperThreshold>] [single|average|complete|ward]");
+      if (args.length < 1) {
+         System.out.println("Usage: java hclustering (<filename>:<16s-23s|23s-5s>:[<lowerThreshold>]:"+
+          "[<upperThreshold>]:[<single|average|complete|ward>])+");
          System.exit(1);
       }
 
       try {
-         mDataFile = new File(args[0]);
+         for (String arg : args) {
+            File dataFile;
+            FileSettings currFileSettings = new FileSettings();
 
-         if (args.length >= 2) {
-            mRegion = IsolateRegion.getRegion(args[1]);
-            if (mRegion == null) {
-               System.err.println("Invalid isolate region. exiting...");
-               System.exit(1);
-            }
+            String[] subArgs = arg.split(":");
+            
+            /*
+             * subArg indices:
+             *    0 - filename
+             *    1 - region
+             *    2 - lowerthreshold
+             *    3 - upperthreshold
+             *    4 - distanceType
+             */
+
+            dataFile = new File(subArgs[0]);
+            currFileSettings.setRegion(IsolateRegion.getRegion(subArgs[1]));
+
+
+            currFileSettings.setLowerThreshold(subArgs.length >= 3 ?
+             Double.parseDouble(subArgs[2]) : mLowerThreshold);
+
+            currFileSettings.setUpperThreshold(subArgs.length >= 4 ?
+             Double.parseDouble(subArgs[3]) : mUpperThreshold);
+
+            //use reflection for distance measure
+            /*
+            distanceMode = args.length >= 3 ? 
+             (DistanceMeasure) Class.forName(args[2]).newInstance() :
+             new EuclideanDistanceMeasure();
+             */
+
+            currFileSettings.setDistanceType(subArgs.length >= 5 ?
+             Cluster.distType.valueOf(subArgs[4].toUpperCase()) : Cluster.distType.AVERAGE);
+
+            dataFileMap.put(dataFile, currFileSettings);
          }
-
-         mLowerThreshold = args.length >= 3 ? Double.parseDouble(args[2]) : mLowerThreshold;
-         mUpperThreshold = args.length >= 4 ? Double.parseDouble(args[3]) : mUpperThreshold;
-
-         //use reflection for distance measure
-         /*
-         distanceMode = args.length >= 3 ? 
-          (DistanceMeasure) Class.forName(args[2]).newInstance() :
-          new EuclideanDistanceMeasure();
-          */
-
-         mClusterDistType = args.length >= 5 ?
-          Cluster.distType.valueOf(args[4].toUpperCase()) : Cluster.distType.AVERAGE;
-
       }
       catch (NumberFormatException formatErr) {
          System.out.printf("Invalid threshold values: %d and %d\n", args[2], args[3]);

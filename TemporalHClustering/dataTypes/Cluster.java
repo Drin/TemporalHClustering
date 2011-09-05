@@ -1,8 +1,11 @@
 package TemporalHClustering.dataTypes;
 
-import TemporalHClustering.dataTypes.IsolateSample;
+import TemporalHClustering.dataTypes.Isolate;
 import TemporalHClustering.dataTypes.SampleMethod;
-import TemporalHClustering.distanceMeasures.IsolateDistance;
+
+import TemporalHClustering.dataStructures.IsolateSimilarityMatrix;
+
+//import TemporalHClustering.distanceMeasures.IsolateSimilarity;
 
 import java.util.List;
 import java.util.Map;
@@ -15,25 +18,28 @@ import java.util.LinkedHashMap;
 //correlation matrix as opposed to the half correlation matrix that is
 //provided in the data file. But certainly something to keep in mind.
 public class Cluster {
-   private ArrayList<IsolateSample> isolates;
-   //private double[] centroid = null;
+   private List<Isolate> isolates;
    private double sumSquaredError, minDist, maxDist, avgDist;
+   private IsolateSimilarityMatrix similarityMatrix;
 
-   public Cluster() {
-      isolates = new ArrayList<IsolateSample>();
-      sumSquaredError = 0;
+   public Cluster(IsolateSimilarityMatrix matrix) {
+      similarityMatrix = matrix;
+      isolates = new ArrayList<Isolate>();
+      //sumSquaredError = 0;
    }
 
-   public Cluster(IsolateSample firstIsolate) {
-      isolates = new ArrayList<IsolateSample>();
+   public Cluster(IsolateSimilarityMatrix matrix, Isolate firstIsolate) {
+      similarityMatrix = matrix;
+      isolates = new ArrayList<Isolate>();
       isolates.add(firstIsolate);
       //setCentroid(firstIsolate);
    }
 
    public Cluster(Cluster copyCluster) {
-      isolates = new ArrayList<IsolateSample>();
+      similarityMatrix = copyCluster.similarityMatrix;
+      isolates = new ArrayList<Isolate>();
 
-      for (IsolateSample sample : copyCluster.isolates) {
+      for (Isolate sample : copyCluster.isolates) {
          this.isolates.add(sample);
       }
 
@@ -44,7 +50,7 @@ public class Cluster {
       return isolates.size();
    }
 
-   public List<IsolateSample> getIsolates() {
+   public List<Isolate> getIsolates() {
       return isolates;
    }
 
@@ -68,11 +74,15 @@ public class Cluster {
    */
 
    public double minDist() {
-      double min = Double.MAX_VALUE;
+      double min = 0;
 
       for (int sampleOne = 0; sampleOne < isolates.size(); sampleOne++) {
          for (int sampleTwo = sampleOne + 1; sampleTwo < isolates.size(); sampleTwo++) {
-            min = Math.min(min, isolates.get(sampleOne).compareTo(isolates.get(sampleTwo)));
+            Isolate isolateOne = isolates.get(sampleOne);
+            Isolate isolateTwo = isolates.get(sampleTwo);
+
+            double correlation = similarityMatrix.getSimilarity(isolateOne, isolateTwo);
+            min = Math.max(min, correlation);
          }
       }
 
@@ -80,11 +90,15 @@ public class Cluster {
    }
 
    public double maxDist() {
-      double max = 0;
+      double max = Double.MAX_VALUE;
 
       for (int sampleOne = 0; sampleOne < isolates.size(); sampleOne++) {
          for (int sampleTwo = sampleOne + 1; sampleTwo < isolates.size(); sampleTwo++) {
-            max = Math.max(max, isolates.get(sampleOne).compareTo(isolates.get(sampleTwo)));
+            Isolate isolateOne = isolates.get(sampleOne);
+            Isolate isolateTwo = isolates.get(sampleTwo);
+
+            double correlation = similarityMatrix.getSimilarity(isolateOne, isolateTwo);
+            max = Math.min(max, correlation);
          }
       }
 
@@ -92,15 +106,24 @@ public class Cluster {
    }
 
    public double avgDist() {
-      double total = 0;
+      double total = 0, count = 0;
 
       for (int sampleOne = 0; sampleOne < isolates.size(); sampleOne++) {
          for (int sampleTwo = sampleOne + 1; sampleTwo < isolates.size(); sampleTwo++) {
-            total += isolates.get(sampleOne).compareTo(isolates.get(sampleTwo));
+            Isolate isolateOne = isolates.get(sampleOne);
+            Isolate isolateTwo = isolates.get(sampleTwo);
+
+            double correlation = similarityMatrix.getSimilarity(isolateOne, isolateTwo);
+            total += correlation;
+            count++;
          }
       }
 
-      return total/isolates.size();
+      System.out.println("are these values the same?");
+      System.out.printf("average using isolate size: %d using count %d\n",
+       (total/isolates.size()), (total/count));
+
+      return total/count;
    }
 
    /*
@@ -114,7 +137,7 @@ public class Cluster {
    }
    */
 
-   public Cluster addIsolate(IsolateSample newSample) {
+   public Cluster addIsolate(Isolate newSample) {
       isolates.add(newSample);
 
       return this;
@@ -123,7 +146,7 @@ public class Cluster {
    public Cluster unionWith(Cluster otherCluster) {
       Cluster newCluster = new Cluster(this);
 
-      for (IsolateSample sample : otherCluster.isolates) {
+      for (Isolate sample : otherCluster.isolates) {
          newCluster.isolates.add(sample);
       }
 
@@ -149,7 +172,9 @@ public class Cluster {
 
             for (int dataNdx = 0; dataNdx < this.isolates.size(); dataNdx++) {
                for (int otherNdx = 0; otherNdx < otherCluster.isolates.size(); otherNdx++) {
-                  double dist = IsolateDistance.getDistance(this.isolates.get(dataNdx),
+                  //double dist = IsolateSimilarity.getDistance(this.isolates.get(dataNdx),
+                   //otherCluster.isolates.get(otherNdx));
+                  double dist = similarityMatrix.getSimilarity(this.isolates.get(dataNdx),
                    otherCluster.isolates.get(otherNdx));
 
                   if (dist < closestDist) {
@@ -160,15 +185,21 @@ public class Cluster {
                }
             }
 
-            closestDist = IsolateDistance.getCorrelation(
+            /*
+            closestDist = IsolateSimilarity.getCorrelation(
              this.isolates.get(closestNdxOne), otherCluster.isolates.get(closestNdxTwo));
+             */
+            closestDist = similarityMatrix.getSimilarity(this.isolates.get(closestNdxOne),
+             otherCluster.isolates.get(closestNdxTwo));
 
             break;
 
          case COMPLETE:
             for (int dataNdx = 0; dataNdx < this.isolates.size(); dataNdx++) {
                for (int otherNdx = 0; otherNdx < otherCluster.isolates.size(); otherNdx++) {
-                  double dist = IsolateDistance.getDistance(this.isolates.get(dataNdx),
+                  //double dist = IsolateSimilarity.getDistance(this.isolates.get(dataNdx),
+                   //otherCluster.isolates.get(otherNdx));
+                  double dist = similarityMatrix.getSimilarity(this.isolates.get(dataNdx),
                    otherCluster.isolates.get(otherNdx));
 
                   if (dist > closestDist) {
@@ -179,8 +210,12 @@ public class Cluster {
                }
             }
 
-            closestDist = IsolateDistance.getCorrelation(
+            /*
+            closestDist = IsolateSimilarity.getCorrelation(
              this.isolates.get(closestNdxOne), otherCluster.isolates.get(closestNdxTwo));
+             */
+            closestDist = similarityMatrix.getSimilarity(this.isolates.get(closestNdxOne),
+             otherCluster.isolates.get(closestNdxTwo));
 
             break;
 
@@ -189,7 +224,9 @@ public class Cluster {
 
             for (int dataNdx = 0; dataNdx < this.isolates.size(); dataNdx++) {
                for (int otherNdx = 0; otherNdx < otherCluster.isolates.size(); otherNdx++) {
-                  double dist = IsolateDistance.findCorrelation(this.isolates.get(dataNdx),
+                  //double dist = IsolateSimilarity.findCorrelation(this.isolates.get(dataNdx),
+                   //otherCluster.isolates.get(otherNdx));
+                  double dist = similarityMatrix.getSimilarity(this.isolates.get(dataNdx),
                    otherCluster.isolates.get(otherNdx));
 
                   totalDist += dist;
@@ -206,7 +243,7 @@ public class Cluster {
 
             for (int dataNdx = 0; dataNdx < this.isolates.size(); dataNdx++) {
                for (int otherNdx = 0; otherNdx < otherCluster.isolates.size(); otherNdx++) {
-                  wardDist += IsolateDistance.findCorrelation(this.isolates.get(dataNdx),
+                  wardDist += similarityMatrix.getSimilarity(this.isolates.get(dataNdx),
                    otherCluster.isolates.get(otherNdx));
 
                   wardSize++;
@@ -219,7 +256,7 @@ public class Cluster {
 
             for (int dataNdx = 0; dataNdx < this.isolates.size(); dataNdx++) {
                for (int otherNdx = 0; otherNdx < otherCluster.isolates.size(); otherNdx++) {
-                  double correlation = IsolateDistance.findCorrelation(this.isolates.get(dataNdx),
+                  double correlation = similarityMatrix.getSimilarity(this.isolates.get(dataNdx),
                    otherCluster.isolates.get(otherNdx));
 
                   closestDist += (correlation - avgCorrelation) * (correlation - avgCorrelation);
@@ -242,7 +279,7 @@ public class Cluster {
 
             for (int dataNdx = 0; dataNdx < this.isolates.size(); dataNdx++) {
                for (int otherNdx = 0; otherNdx < otherCluster.isolates.size(); otherNdx++) {
-                  closestDist = Math.min(closestDist, 100 - IsolateDistance.findCorrelation(
+                  closestDist = Math.min(closestDist, similarityMatrix.getSimilarity(
                    this.isolates.get(dataNdx), otherCluster.isolates.get(otherNdx)));
                }
             }
@@ -254,7 +291,7 @@ public class Cluster {
          case SINGLE:
             for (int dataNdx = 0; dataNdx < this.isolates.size(); dataNdx++) {
                for (int otherNdx = 0; otherNdx < otherCluster.isolates.size(); otherNdx++) {
-                  closestDist = Math.max(closestDist, 100 - IsolateDistance.findCorrelation(
+                  closestDist = Math.max(closestDist, similarityMatrix.getSimilarity(
                    this.isolates.get(dataNdx), otherCluster.isolates.get(otherNdx)));
                }
             }
@@ -268,8 +305,8 @@ public class Cluster {
 
             for (int dataNdx = 0; dataNdx < this.isolates.size(); dataNdx++) {
                for (int otherNdx = 0; otherNdx < otherCluster.isolates.size(); otherNdx++) {
-                  //totalDist += 100 - IsolateDistance.findCorrelation(this.isolates.get(dataNdx),
-                  totalDist += IsolateDistance.findCorrelation(this.isolates.get(dataNdx),
+                  //totalDist += 100 - IsolateSimilarity.findCorrelation(this.isolates.get(dataNdx),
+                  totalDist += similarityMatrix.getSimilarity(this.isolates.get(dataNdx),
                    otherCluster.isolates.get(otherNdx));
 
                   totalSize++;
@@ -287,7 +324,7 @@ public class Cluster {
 
             for (int dataNdx = 0; dataNdx < this.isolates.size(); dataNdx++) {
                for (int otherNdx = 0; otherNdx < otherCluster.isolates.size(); otherNdx++) {
-                  wardDist += IsolateDistance.findCorrelation(this.isolates.get(dataNdx),
+                  wardDist += similarityMatrix.getSimilarity(this.isolates.get(dataNdx),
                    otherCluster.isolates.get(otherNdx));
 
                   wardSize++;
@@ -300,7 +337,9 @@ public class Cluster {
 
             for (int dataNdx = 0; dataNdx < this.isolates.size(); dataNdx++) {
                for (int otherNdx = 0; otherNdx < otherCluster.isolates.size(); otherNdx++) {
-                  double correlation = IsolateDistance.findCorrelation(this.isolates.get(dataNdx),
+                  //double correlation = IsolateSimilarity.findCorrelation(this.isolates.get(dataNdx),
+                   //otherCluster.isolates.get(otherNdx));
+                  double correlation = similarityMatrix.getSimilarity(this.isolates.get(dataNdx),
                    otherCluster.isolates.get(otherNdx));
 
                   closestDist += (correlation - avgCorrelation) * (correlation - avgCorrelation);
@@ -327,22 +366,26 @@ public class Cluster {
       switch(type) {
 
          case SINGLE:
-            closestDist = Double.MAX_VALUE;
-
             for (int dataNdx = 0; dataNdx < this.isolates.size(); dataNdx++) {
                for (int otherNdx = 0; otherNdx < otherCluster.isolates.size(); otherNdx++) {
-                  closestDist = Math.min(closestDist, IsolateDistance.getDistance(
-                   this.isolates.get(dataNdx), otherCluster.isolates.get(otherNdx)));
+                  //closestDist = Math.min(closestDist, IsolateSimilarity.getDistance(
+                   //this.isolates.get(dataNdx), otherCluster.isolates.get(otherNdx)));
+                  closestDist = Math.max(closestDist, similarityMatrix.getSimilarity(this.isolates.get(dataNdx),
+                   otherCluster.isolates.get(otherNdx)));
                }
             }
 
             break;
 
          case COMPLETE:
+            closestDist = Double.MAX_VALUE;
+
             for (int dataNdx = 0; dataNdx < this.isolates.size(); dataNdx++) {
                for (int otherNdx = 0; otherNdx < otherCluster.isolates.size(); otherNdx++) {
-                  closestDist = Math.max(closestDist, IsolateDistance.getDistance(
-                   this.isolates.get(dataNdx), otherCluster.isolates.get(otherNdx)));
+                  //closestDist = Math.max(closestDist, IsolateSimilarity.getDistance(
+                   //this.isolates.get(dataNdx), otherCluster.isolates.get(otherNdx)));
+                  closestDist = Math.min(closestDist, similarityMatrix.getSimilarity(this.isolates.get(dataNdx),
+                   otherCluster.isolates.get(otherNdx)));
                }
             }
 
@@ -353,7 +396,9 @@ public class Cluster {
 
             for (int dataNdx = 0; dataNdx < this.isolates.size(); dataNdx++) {
                for (int otherNdx = 0; otherNdx < otherCluster.isolates.size(); otherNdx++) {
-                  totalDist += IsolateDistance.getDistance(this.isolates.get(dataNdx),
+                  //totalDist += IsolateSimilarity.getDistance(this.isolates.get(dataNdx),
+                   //otherCluster.isolates.get(otherNdx));
+                  totalDist = similarityMatrix.getSimilarity(this.isolates.get(dataNdx),
                    otherCluster.isolates.get(otherNdx));
 
                   totalSize++;
@@ -368,7 +413,10 @@ public class Cluster {
 
             for (int dataNdx = 0; dataNdx < this.isolates.size(); dataNdx++) {
                for (int otherNdx = 0; otherNdx < otherCluster.isolates.size(); otherNdx++) {
-                  wardDist += IsolateDistance.getDistance(this.isolates.get(dataNdx),
+                  //wardDist += similarityMatrix.getDistance(this.isolates.get(dataNdx),
+                   //otherCluster.isolates.get(otherNdx));
+
+                  wardDist += similarityMatrix.getSimilarity(this.isolates.get(dataNdx),
                    otherCluster.isolates.get(otherNdx));
 
                   wardSize++;
@@ -381,7 +429,9 @@ public class Cluster {
 
             for (int dataNdx = 0; dataNdx < this.isolates.size(); dataNdx++) {
                for (int otherNdx = 0; otherNdx < otherCluster.isolates.size(); otherNdx++) {
-                  double correlation = IsolateDistance.getDistance(this.isolates.get(dataNdx),
+                  //double correlation = IsolateSimilarity.getDistance(this.isolates.get(dataNdx),
+                   //otherCluster.isolates.get(otherNdx));
+                  double correlation = similarityMatrix.getSimilarity(this.isolates.get(dataNdx),
                    otherCluster.isolates.get(otherNdx));
 
                   closestDist += (correlation - avgCorrelation) * (correlation - avgCorrelation);
@@ -445,7 +495,7 @@ public class Cluster {
    public String toCytoscapeCluster(String clusterName) {
       String cytoFormat = "";
 
-      for (IsolateSample sample : isolates) {
+      for (Isolate sample : isolates) {
          cytoFormat += String.format("%s\t%s\n",
           clusterName, sample);
       }
@@ -466,19 +516,24 @@ public class Cluster {
          for (int dstNdx = srcNdx + 1; dstNdx < isolates.size(); dstNdx++) {
             double isolateCorr = -1;
 
-            if (isolates.get(srcNdx).hasCorr(isolates.get(dstNdx))) {
+            Isolate srcIsolate = isolates.get(srcNdx);
+            Isolate dstIsolate = isolates.get(dstNdx);
+
+            //if (isolates.get(srcNdx).hasCorr(isolates.get(dstNdx))) {
+            if (similarityMatrix.hasCorrelation(srcIsolate, dstIsolate)) {
                //use source isolate's correlation map
-               Map<IsolateSample, Double> corrMap = isolates.get(srcNdx).getCorrMap();
-
+               //Map<Isolate, Double> corrMap = isolates.get(srcNdx).getCorrMap();
+               
                cytoFormat += String.format("%s\t%s\t%s\t%.03f\n",
-                isolates.get(srcNdx), isolates.get(dstNdx), interactionType, corrMap.get(isolates.get(dstNdx)));
+                isolates.get(srcNdx), isolates.get(dstNdx), interactionType, 
+                similarityMatrix.getSimilarity(srcIsolate, dstIsolate));
             }
-            else if (isolates.get(dstNdx).hasCorr(isolates.get(srcNdx))) {
+            else if (similarityMatrix.hasCorrelation(dstIsolate, srcIsolate)) {
                //use destination isolate's correlation map
-               Map<IsolateSample, Double> corrMap = isolates.get(dstNdx).getCorrMap();
+               //Map<Isolate, Double> corrMap = isolates.get(dstNdx).getCorrMap();
 
                cytoFormat += String.format("%s\t%s\t%s\t%.03f\n",
-                isolates.get(dstNdx), isolates.get(srcNdx), interactionType, corrMap.get(isolates.get(srcNdx)));
+                isolates.get(dstNdx), isolates.get(srcNdx), interactionType, similarityMatrix.getSimilarity(dstIsolate, srcIsolate));
             }
 
          }
@@ -503,7 +558,7 @@ public class Cluster {
       Map<Integer, Map<Integer, String>> laterMap = new LinkedHashMap<Integer, Map<Integer, String>>();
       Map<Integer, Map<Integer, String>> deepMap = new LinkedHashMap<Integer, Map<Integer, String>>();
 
-      for (IsolateSample sample : isolates) {
+      for (Isolate sample : isolates) {
          Map<Integer, Map<Integer, String>> sampleMap = null;
 
          String sampleName = sample.getName();

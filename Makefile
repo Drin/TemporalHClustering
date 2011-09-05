@@ -1,4 +1,5 @@
-dataFile="data/PilotCorrelation.csv"
+dataFile=data/PilotCorrelation.csv
+region=16s-23s
 
 compile:
 	javac TemporalHClustering/HClustering.java
@@ -7,7 +8,7 @@ compileGUI:
 	javac TemporalHClustering/gui/ClusteringGUI.java
 
 run:
-	java TemporalHClustering/HClustering ${dataFile}
+	java TemporalHClustering/HClustering ${dataFile}:${region}
 
 runGUI:
 	java TemporalHClustering/gui/ClusteringGUI

@@ -57,13 +57,10 @@ public enum SampleMethod {
    public static SampleMethod getMethod(char encoding) {
       switch (encoding) {
          case 'f':
-         case 'F':
             return FECAL;
          case 'i':
-         case 'I':
             return IMM;
          case 'l':
-         case 'L':
             return LATER;
          case 'd':
             return DEEP;

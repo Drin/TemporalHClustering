@@ -2,8 +2,12 @@ package TemporalHClustering;
 
 import TemporalHClustering.dataTypes.Cluster;
 import TemporalHClustering.dataTypes.ClusterDendogram;
-import TemporalHClustering.dataTypes.IsolateSample;
-import TemporalHClustering.distanceMeasures.IsolateDistance;
+import TemporalHClustering.dataTypes.Isolate;
+
+import TemporalHClustering.dataStructures.IsolateSimilarityMatrix;
+
+import TemporalHClustering.distanceMeasures.IsolateSimilarity;
+
 import TemporalHClustering.dendogram.Dendogram;
 
 import java.io.File;
@@ -67,7 +71,7 @@ public class IsolateOutputWriter {
       }
    }
 
-   public static void outputClustersByDay(int sampleDay, List<ClusterDendogram> clustDends) {
+   public static void outputClustersByDay(IsolateSimilarityMatrix similarityMatrix, int sampleDay, List<ClusterDendogram> clustDends) {
       String outFileName = "ClusterDays/clustersByDay" + sampleDay + ".xml";
       String separator = "\n====================\n";
       String clusterOutput = "";
@@ -77,7 +81,7 @@ public class IsolateOutputWriter {
       }
 
       clusterOutput += "\n\n\n\n";
-      List<IsolateSample> isolateList = new ArrayList<IsolateSample>();
+      List<Isolate> isolateList = new ArrayList<Isolate>();
 
       for (ClusterDendogram clustDend : clustDends) {
          isolateList.addAll(clustDend.getCluster().getIsolates());
@@ -92,7 +96,7 @@ public class IsolateOutputWriter {
       for (int ndxOne = 0; ndxOne < isolateList.size(); ndxOne++) {
          clusterOutput += isolateList.get(ndxOne);
          for (int ndxTwo = 0; ndxTwo < isolateList.size(); ndxTwo++) {
-            clusterOutput += "\t" + IsolateDistance.findCorrelation(
+            clusterOutput += "\t" + similarityMatrix.getSimilarity(
              isolateList.get(ndxOne), isolateList.get(ndxTwo));
          }
          clusterOutput += "\n";

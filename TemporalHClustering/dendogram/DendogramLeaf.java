@@ -1,16 +1,18 @@
 package TemporalHClustering.dendogram;
 
+import TemporalHClustering.dataStructures.IsolateSimilarityMatrix;
+
 import TemporalHClustering.dataTypes.Cluster;
-import TemporalHClustering.dataTypes.IsolateSample;
+import TemporalHClustering.dataTypes.Isolate;
 
 import java.util.List;
 
 public class DendogramLeaf implements Dendogram {
    private double mCorrelation;
-   private IsolateSample mIsolate;
+   private Isolate mIsolate;
    private Dendogram mLeft, mRight;
 
-   public DendogramLeaf(IsolateSample sample) {
+   public DendogramLeaf(Isolate sample) {
       mCorrelation = 100;
       mIsolate = sample;
       mLeft = null;
@@ -21,7 +23,7 @@ public class DendogramLeaf implements Dendogram {
       return mCorrelation;
    }
 
-   public IsolateSample getIsolate() {
+   public Isolate getIsolate() {
       return mIsolate;
    }
 
@@ -33,8 +35,8 @@ public class DendogramLeaf implements Dendogram {
       return mRight;
    }
 
-   public Cluster toCluster() {
-      return new Cluster(mIsolate);
+   public Cluster toCluster(IsolateSimilarityMatrix matrix) {
+      return new Cluster(matrix, mIsolate);
    }
 
    public String toString() {
