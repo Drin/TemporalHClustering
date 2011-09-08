@@ -34,16 +34,18 @@ import javax.swing.JTextField;
 import javax.swing.BoxLayout;
 
 public class InputDialog extends JDialog {
-   private final int DIALOG_HEIGHT = 250, DIALOG_WIDTH = 475;
-   private String recentlyAccessedDir = "";
+   private final int DIALOG_HEIGHT = 325, DIALOG_WIDTH = 475;
+   private String recentlyAccessedDir = "", mArgDelim = null;
    private Container mPane = null, mOwner = null;
    private Map<File, String> dataFileMap;
 
    private ButtonGroup firstDataRegion, secondDataRegion;
    private JTextField firstDataFile, secondDataFile;
+   private JTextField firstDataThreshold, secondDataThreshold, globalThreshold;
 
    public InputDialog() {
       super();
+      mArgDelim = HClustering.getArgSeparator();
 
       this.setSize(DIALOG_WIDTH, DIALOG_HEIGHT);
       this.setResizable(false);
@@ -60,10 +62,15 @@ public class InputDialog extends JDialog {
 
       firstDataFile = new JTextField(20);
       secondDataFile = new JTextField(20);
+
+      firstDataThreshold = new JTextField("99.7", 20);
+      secondDataThreshold = new JTextField("99.7", 20);
+      globalThreshold = new JTextField("99.7", 20);
    }
 
    public InputDialog(Frame owner, String title) {
       super(owner, title);
+      mArgDelim = HClustering.getArgSeparator();
 
       this.setSize(DIALOG_WIDTH, DIALOG_HEIGHT);
       this.setResizable(false);
@@ -82,6 +89,10 @@ public class InputDialog extends JDialog {
 
       firstDataFile = new JTextField(20);
       secondDataFile = new JTextField(20);
+
+      firstDataThreshold = new JTextField("99.7", 20);
+      secondDataThreshold = new JTextField("99.7", 20);
+      globalThreshold = new JTextField("99.7", 20);
    }
 
    public static void main(String[] args) {
@@ -92,15 +103,32 @@ public class InputDialog extends JDialog {
    }
 
    public void init() {
-      mPane.add(newFileField(firstDataRegion, firstDataFile));
-      mPane.add(newFileField(secondDataRegion, secondDataFile));
+      mPane.add(newGlobalThreshold(globalThreshold));
+
+      mPane.add(new JLabel("Input Dataset"));
+      mPane.add(newFileField(firstDataRegion, firstDataFile, firstDataThreshold));
+
+      mPane.add(new JLabel("Input Dataset"));
+      mPane.add(newFileField(secondDataRegion, secondDataFile, secondDataThreshold));
 
       mPane.add(controls());
 
       mPane.validate();
    }
 
-   public JPanel newFileField(ButtonGroup regionSelection, JTextField fileNameField) {
+   public JPanel newGlobalThreshold(JTextField thresholdText) {
+      JPanel thresholdField = new JPanel();
+
+      thresholdField.setLayout(new BoxLayout(thresholdField, BoxLayout.X_AXIS));
+
+      thresholdField.add(new JLabel("Clustering Threshold"));
+      thresholdField.add(thresholdText);
+      thresholdField.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+      return thresholdField;
+   }
+
+   public JPanel newFileField(ButtonGroup regionSelection, JTextField fileNameField, JTextField thresholdField) {
       JPanel radioSelection = new JPanel();
       JPanel fileInput = new JPanel();
       JPanel fileInputPanel = new JPanel();
@@ -119,6 +147,8 @@ public class InputDialog extends JDialog {
 
       fileInput.add(new JLabel("File:"));
       fileInput.add(fileNameField);
+      fileInput.add(new JLabel("Threshold:"));
+      fileInput.add(thresholdField);
 
       fileInput.setAlignmentY(Component.CENTER_ALIGNMENT);
 
@@ -189,9 +219,6 @@ public class InputDialog extends JDialog {
       okayButton.addActionListener(new ActionListener(){
          public void actionPerformed(ActionEvent e) {
             //basic validation
-            System.out.println("calling HClustering...");
-            
-            HClustering clusterer = new HClustering();
 
             /*
              * args for clusterer consist of:
@@ -217,6 +244,10 @@ public class InputDialog extends JDialog {
             ArrayList<String> args = new ArrayList<String>();
 
             try {
+               HClustering.setDistanceThreshold(Double.parseDouble(globalThreshold.getText()));
+               double firstThreshold = Double.parseDouble(firstDataThreshold.getText());
+               double secondThreshold = Double.parseDouble(secondDataThreshold.getText());
+               
                JRadioButton firstRegion = null, secondRegion = null;
                Enumeration regionSelection = firstDataRegion.getElements();
 
@@ -257,9 +288,17 @@ public class InputDialog extends JDialog {
                      return;
                   }
                }
+               
+               if (firstThreshold < 1 || secondThreshold < 1) {
+                  JOptionPane.showMessageDialog(mOwner,
+                   "Invalid threshold values",
+                   "Invalid Options", JOptionPane.ERROR_MESSAGE);
+                  return;
+               }
 
                if (!firstDataFile.getText().equals("") && firstRegion != null) {
-                  args.add(String.format("%s:%s", firstDataFile.getText(), firstRegion.getText()));
+                  args.add(String.format("%s%s%s%s%.03f", firstDataFile.getText(),
+                   mArgDelim, firstRegion.getText(), mArgDelim, firstThreshold));
                }
                else if (!firstDataFile.getText().equals("") || firstRegion != null) {
                   JOptionPane.showMessageDialog(mOwner,
@@ -270,7 +309,8 @@ public class InputDialog extends JDialog {
                }
 
                if (!secondDataFile.getText().equals("") && secondRegion != null) {
-                  args.add(String.format("%s:%s", secondDataFile.getText(), secondRegion.getText()));
+                  args.add(String.format("%s%s%s%s%.03f", secondDataFile.getText(),
+                   mArgDelim, secondRegion.getText(), mArgDelim, secondThreshold));
                }
                else if (!secondDataFile.getText().equals("") || secondRegion != null) {
                   JOptionPane.showMessageDialog(mOwner,
@@ -288,7 +328,14 @@ public class InputDialog extends JDialog {
             }
 
             //Should write files somewhere
-            if (clusterer.cluster((String[]) args.toArray())) {
+            String[] argsArr = new String[args.size()];
+            args.toArray(argsArr);
+
+            System.out.println("calling HClustering...");
+            
+            HClustering clusterer = new HClustering(args.size());
+
+            if (clusterer.cluster(argsArr)) {
                JOptionPane.showMessageDialog(mOwner,
                 "Clustering complete",
                 "Clustering completed", JOptionPane.INFORMATION_MESSAGE);

@@ -34,6 +34,8 @@ public class ClusterSingleListener implements ActionListener {
    
    public void actionPerformed(ActionEvent e) {
       clusterDialog = new InputDialog(mainFrame, "Cluster Single File");
+
+      clusterDialog.init();
       
       /*
       clusterDialog.getContentPane().setLayout(

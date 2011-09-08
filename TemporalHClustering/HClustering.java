@@ -7,6 +7,7 @@ import TemporalHClustering.dataTypes.Cluster;
 import TemporalHClustering.dataTypes.ClusterDendogram;
 import TemporalHClustering.dataTypes.Isolate;
 import TemporalHClustering.dataTypes.IsolateRegion;
+import TemporalHClustering.dataTypes.Connectivity;
 
 import TemporalHClustering.dataStructures.IsolateSimilarityMatrix;
 
@@ -53,18 +54,34 @@ public class HClustering {
    private double mLowerThreshold, mUpperThreshold;
    private File mDataFile = null;
    private Map<File, FileSettings> dataFileMap;
-   private IsolateSimilarityMatrix similarityMatrix;
-   private double mThresholding = 6.5;
+   //MARKER
+   //private IsolateSimilarityMatrix similarityMatrix;
+   private Map<Connectivity, IsolateSimilarityMatrix> mIsolateNetworks;
+   //private double mThresholding = 6.5;
+   //private double mThresholding = 99.7;
 
-   public HClustering() {
+   private static double defaultThreshold = 99.7;
+   private double mThresholding = -1;
+   private int mNumRegions;
+
+   private static final String ARG_SEPARATOR = "&";
+
+   public HClustering(int numRegions) {
+      super();
+
+      mNumRegions = numRegions;
+      mThresholding = (defaultThreshold * mNumRegions);
+
+
       mLowerThreshold = 95;
       mUpperThreshold = 99.7;
       dataFileMap = new HashMap<File, FileSettings>();
-      similarityMatrix = new IsolateSimilarityMatrix();
+      //MARKER
+      //similarityMatrix = new IsolateSimilarityMatrix();
    }
 
    public static void main(String[] args) {
-      HClustering clusterer = new HClustering();
+      HClustering clusterer = new HClustering(1);
 
       clusterer.cluster(args);
    }
@@ -102,25 +119,36 @@ public class HClustering {
 
    private List<ClusterDendogram> clusterIsolates(File dataFile, FileSettings settings) {
       IsolateRegion region = settings.getRegion();
+      double distanceThreshold = settings.getDistanceThreshold();
       double lowerThreshold = settings.getLowerThreshold();
       double upperThreshold = settings.getUpperThreshold();
       Cluster.distType type = settings.getDistanceType();
+
       //mappings represent days to isolates
       Map<Integer, List<Isolate>> isolateMap = null;
       //list of all constructed clusters
       List<ClusterDendogram> clusters = new ArrayList<ClusterDendogram>();
 
       if (dataFile != null) {
-         IsolateFileParser parser = new IsolateFileParser(dataFile, region, lowerThreshold, upperThreshold);
+         IsolateFileParser parser = new IsolateFileParser(dataFile, region, distanceThreshold,
+          lowerThreshold, upperThreshold);
 
-         //TODO how to be sure that both regions are used for an overall
-         //similarity between isolates?
-         isolateMap = parser.extractData(similarityMatrix);
+         //MARKER old code
+         //isolateMap = parser.extractData(similarityMatrix);
+         mIsolateNetworks = parser.extractData();
       }
+
+      //MARKER new code. get the isolateMap from the similarity matrix now
+      //also, multiple similarity matrices are stored in the isolate networks
+      //map so that it is possible to iterate on correlations based on their
+      //strength instead of just going all willy nilly
+      IsolateSimilarityMatrix similarityMatrix = mIsolateNetworks.get(Connectivity.STRONG);
+      isolateMap = similarityMatrix.getIsolateMap();
 
       for (int sampleDay : isolateMap.keySet()) {
          //Cluster the list of isolates in this day
-         List<ClusterDendogram> currClusters = clusterIsolateList(isolateMap.get(sampleDay), type);
+         List<ClusterDendogram> currClusters = clusterIsolateList(similarityMatrix,
+          isolateMap.get(sampleDay), type);
 
          IsolateOutputWriter.outputClustersByDay(similarityMatrix, sampleDay, currClusters);
          /*
@@ -136,10 +164,71 @@ public class HClustering {
          clusters = clusterToDate(clusters, currClusters, type);
       }
 
+      
+      similarityMatrix = mIsolateNetworks.get(Connectivity.WEAK);
+      isolateMap = similarityMatrix.getIsolateMap();
+
+      for (int sampleDay : isolateMap.keySet()) {
+         for (Isolate isolate : isolateMap.get(sampleDay)) {
+            clusters = clusterWeakIsolates(similarityMatrix, clusters, isolate, type);
+         }
+      }
+
       return clusters;
    }
 
-   private List<ClusterDendogram> clusterIsolateList(List<Isolate> isolates, Cluster.distType type) {
+   private List<ClusterDendogram> clusterWeakIsolates(IsolateSimilarityMatrix similarityMatrix,
+    List<ClusterDendogram> clusters, Isolate isolate, Cluster.distType type) {
+      System.out.printf("starting weak clustering method...\n");
+
+      boolean hasChanged;
+      double maxSimilarity = 0;
+      Point closeClusters = new Point(-1, -1);
+
+      if (isolate.hasBeenClustered()) {
+         return clusters;
+      }
+
+      Cluster newCluster = new Cluster(similarityMatrix, isolate);
+      Dendogram newDendogram = new DendogramLeaf(isolate);
+      clusters.add(new ClusterDendogram(newCluster, newDendogram));
+
+      do {
+         hasChanged = false;
+
+         int clustOne = clusters.size() - 1;
+         for (int clustTwo = 0; clustTwo < clusters.size(); clustTwo++) {
+            Cluster cluster_A = clusters.get(clustOne).getCluster();
+            Cluster cluster_B = clusters.get(clustTwo).getCluster();
+
+            double clustDist = cluster_A.corrDistance(cluster_B, type);
+
+            if (clustDist > maxSimilarity && clustDist > mThresholding) {
+               maxSimilarity = clustDist;
+               closeClusters = new Point(clustOne, clustTwo);
+            }
+         }
+
+         List<ClusterDendogram> newClusters = combineClusters(clusters, closeClusters, maxSimilarity, type);
+
+         if (newClusters.size() != clusters.size()) {
+            hasChanged = true;
+            clusters = newClusters;
+         }
+
+         //reset various variables
+         closeClusters = new Point(-1, -1);
+         maxSimilarity = 0;
+         System.out.printf("finishing weak clustering iteration...\n");
+
+         //continue clustering until clusters do not change
+      } while (hasChanged);
+
+      return clusters;
+   }
+
+   private List<ClusterDendogram> clusterIsolateList(IsolateSimilarityMatrix similarityMatrix,
+    List<Isolate> isolates, Cluster.distType type) {
       //represent fecal samples
       List<ClusterDendogram> clusterF = new ArrayList<ClusterDendogram>();
       //represent immediate (after) samples
@@ -209,22 +298,27 @@ public class HClustering {
    }
 
    private List<ClusterDendogram> clusterGroup(List<ClusterDendogram> clusters, Cluster.distType type) {
+      System.out.printf("***clustering new group***\n");
       Point closeClusters = new Point(-1, -1);
       //double minDist = Double.MAX_VALUE;
-      double minDist = 0;
+      double maxSimilarity = 0;
       boolean hasChanged;
 
       do {
+         System.out.printf("entering clustering loop...\n");
          hasChanged = false;
 
          for (int clustOne = 0; clustOne < clusters.size(); clustOne++) {
             for (int clustTwo = clustOne + 1; clustTwo < clusters.size(); clustTwo++) {
                Cluster cluster_A = clusters.get(clustOne).getCluster();
                Cluster cluster_B = clusters.get(clustTwo).getCluster();
+
+               System.out.printf("\n\ncluster A:\n\t%s\n\ncluster B:\n\t%s\n\n", cluster_A, cluster_B);
                //double clustDist = cluster_A.distance(cluster_B, type);
 
                //this will ensure that i'm only comparing based on correlations
                double clustDist = cluster_A.corrDistance(cluster_B, type);
+               System.out.printf("clustDist: %.03f\n", clustDist);
                /*
                if (clustDist > 1) {
                   System.err.println("cluster group clustDist: " + clustDist + " between " + cluster_A + " and " + cluster_B);
@@ -238,11 +332,14 @@ public class HClustering {
                //corresponds to results used in paper
                //TODO  investigate the results for when you use '> minDist'
                //if (/*clustDist > minDist &&*/ clustDist > 99.7 ) {
-               System.out.printf("clustDist: %.03f\n", clustDist);
+               //System.out.printf("clustDist: %.03f\n", clustDist);
 
-               if (clustDist > minDist && clustDist > mThresholding ) {
-                  //this is equivalent to previous line unless '> minDist' is uncommented.
-                  minDist = clustDist;
+               //if (clustDist > minDist && clustDist > mThresholding ) {
+               System.out.printf("is %.03f > %.03f? %s\n\n", clustDist, maxSimilarity, (clustDist > maxSimilarity));
+               System.out.printf("mThreshold = %.03f\n", mThresholding);
+               if (clustDist > maxSimilarity && clustDist > mThresholding) {
+                  maxSimilarity = clustDist;
+                  System.out.printf("maxSimilarity: %.03f\n", maxSimilarity);
                   closeClusters = new Point(clustOne, clustTwo);
                }
             }
@@ -253,7 +350,7 @@ public class HClustering {
           * combined. In this case set hasChanges to true and set the cluster list to
           * the new cluster list
           */
-         List<ClusterDendogram> newClusters = combineClusters(clusters, closeClusters, minDist, type);
+         List<ClusterDendogram> newClusters = combineClusters(clusters, closeClusters, maxSimilarity, type);
 
          if (newClusters.size() != clusters.size()) {
             hasChanged = true;
@@ -262,10 +359,13 @@ public class HClustering {
 
          //reset various variables
          closeClusters = new Point(-1, -1);
-         minDist = Double.MAX_VALUE;
+         maxSimilarity = 0;
+         System.out.printf("finishing clustering iteration...\n");
 
          //continue clustering until clusters do not change
       } while (hasChanged);
+
+      System.out.printf("***Finished clustering group***\n");
 
       return clusters;
    }
@@ -392,7 +492,7 @@ public class HClustering {
          Cluster newCluster = newClusterDend.getCluster();
 
          //double minDist = Double.MAX_VALUE;
-         double minDist = 0;
+         double maxSimilarity = 0;
          int closeClusterNdx = -1;
 
          for (int clustNdx = 0; clustNdx < clusters.size(); clustNdx++) {
@@ -402,8 +502,8 @@ public class HClustering {
             //if (clustDist < minDist && clustDist < mLowerThreshold) {
             //System.out.println("cluster to date ward's distance: " + clustDist);
             //if (clustDist < minDist && clustDist >= mUpperThreshold) {
-            if (clustDist > minDist && clustDist > mThresholding) {
-               minDist = clustDist;
+            if (clustDist > maxSimilarity && clustDist > mThresholding) {
+               maxSimilarity = clustDist;
                closeClusterNdx = clustNdx;
             }
          }
@@ -412,7 +512,7 @@ public class HClustering {
          //oldCluster U newCluster
          if (closeClusterNdx != -1) {
             Cluster closeCluster = clusters.get(closeClusterNdx).getCluster();
-            Dendogram newDendogram = new DendogramNode(minDist, newClusterDend.getDendogram(),
+            Dendogram newDendogram = new DendogramNode(maxSimilarity, newClusterDend.getDendogram(),
              clusters.get(closeClusterNdx).getDendogram());
             ClusterDendogram newClustDend = new ClusterDendogram(
              closeCluster.unionWith(newCluster), newDendogram);
@@ -437,29 +537,33 @@ public class HClustering {
 
       try {
          for (String arg : args) {
+            System.out.println("arg: " + arg);
+
             File dataFile;
             FileSettings currFileSettings = new FileSettings();
 
-            String[] subArgs = arg.split(":");
+            String[] subArgs = arg.split(ARG_SEPARATOR);
             
             /*
              * subArg indices:
              *    0 - filename
              *    1 - region
-             *    2 - lowerthreshold
-             *    3 - upperthreshold
-             *    4 - distanceType
+             *    2 - region distance threshold
+             *    3 - lowerthreshold
+             *    4 - upperthreshold
+             *    5 - distanceType
              */
 
             dataFile = new File(subArgs[0]);
             currFileSettings.setRegion(IsolateRegion.getRegion(subArgs[1]));
 
+            currFileSettings.setDistanceThreshold(Double.parseDouble(subArgs[2]));
 
-            currFileSettings.setLowerThreshold(subArgs.length >= 3 ?
-             Double.parseDouble(subArgs[2]) : mLowerThreshold);
+            currFileSettings.setLowerThreshold(subArgs.length >= 4 ?
+             Double.parseDouble(subArgs[3]) : mLowerThreshold);
 
-            currFileSettings.setUpperThreshold(subArgs.length >= 4 ?
-             Double.parseDouble(subArgs[3]) : mUpperThreshold);
+            currFileSettings.setUpperThreshold(subArgs.length >= 5 ?
+             Double.parseDouble(subArgs[4]) : mUpperThreshold);
 
             //use reflection for distance measure
             /*
@@ -468,18 +572,26 @@ public class HClustering {
              new EuclideanDistanceMeasure();
              */
 
-            currFileSettings.setDistanceType(subArgs.length >= 5 ?
-             Cluster.distType.valueOf(subArgs[4].toUpperCase()) : Cluster.distType.AVERAGE);
+            currFileSettings.setDistanceType(subArgs.length >= 6 ?
+             Cluster.distType.valueOf(subArgs[5].toUpperCase()) : Cluster.distType.AVERAGE);
 
             dataFileMap.put(dataFile, currFileSettings);
          }
       }
       catch (NumberFormatException formatErr) {
-         System.out.printf("Invalid threshold values: %d and %d\n", args[2], args[3]);
+         System.out.printf("Invalid threshold values: %d or %d or %d\n", args[2], args[3], args[4]);
          System.exit(1);
       }
 
       return true;
+   }
+
+   public static String getArgSeparator() {
+      return ARG_SEPARATOR;
+   }
+
+   public static void setDistanceThreshold(double distThreshold) {
+      defaultThreshold = distThreshold;
    }
 
 }

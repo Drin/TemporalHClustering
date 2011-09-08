@@ -2,47 +2,157 @@ package TemporalHClustering.dataStructures;
 
 import TemporalHClustering.dataTypes.IsolateRegion;
 import TemporalHClustering.dataTypes.Isolate;
+import TemporalHClustering.dataTypes.IsolateCorrelation;
 
+import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 
 public class IsolateSimilarityMatrix {
-   private Map<Isolate, Map<Isolate, Double>> similarityMatrix_16_23 = null;
-   private Map<Isolate, Map<Isolate, Double>> similarityMatrix_23_5 = null;
+   private Map<Isolate, Map<Isolate, IsolateCorrelation>> mSimilarityMatrix = null;
+   //mIsolateMappingping maps days to the list of isolates collected on that day
+   private Map<Integer, List<Isolate>> mIsolateMapping = null;
+
    private final double INVALID_MAPPING = -2;
+   private double distThreshold_16_23 = -1, distThreshold_23_5 = -1;
 
    public IsolateSimilarityMatrix() {
       super();
 
-      similarityMatrix_16_23 = new HashMap<Isolate, Map<Isolate, Double>>();
-      similarityMatrix_23_5 = new HashMap<Isolate, Map<Isolate, Double>>();
+      mSimilarityMatrix = new HashMap<Isolate, Map<Isolate, IsolateCorrelation>>();
+      mIsolateMapping = new HashMap<Integer, List<Isolate>>();
+   }
+
+   public Map<Integer, List<Isolate>> getIsolateMap() {
+      return mIsolateMapping;
+   }
+
+   public Map<Isolate, Map<Isolate, IsolateCorrelation>> getSimilarityMatrix() {
+      return mSimilarityMatrix;
+   }
+
+   public IsolateCorrelation getCorrelation(Isolate isolateOne, Isolate isolateTwo) {
+      if (!mSimilarityMatrix.containsKey(isolateOne) ||
+       !mSimilarityMatrix.get(isolateOne).containsKey(isolateTwo)) {
+         return null;
+      }
+
+      return mSimilarityMatrix.get(isolateOne).get(isolateTwo);
+   }
+
+   public double getCorrelationVal(Isolate isolateOne, Isolate isolateTwo) {
+      IsolateCorrelation correlation = getCorrelation(isolateOne, isolateTwo);
+      return correlation != null ? correlation.getCorrelation() : 0;
+   }
+
+   public void setDistanceThreshold(IsolateRegion region, double distThreshold) {
+      switch (region) {
+         case ITS_16_23:
+            distThreshold_16_23 = distThreshold;
+            break;
+         case ITS_23_5:
+            distThreshold_23_5 = distThreshold;
+            break;
+         default:
+            System.err.println("Invalid region: " + region);
+            break;
+      }
+   }
+
+   /*
+   public boolean isAboveThresholds(Isolate sample1, Isolate sample2) {
+      Map<Isolate, Double> correlationMap_16_23 = null;
+      Map<Isolate, Double> correlationMap_23_5 = null;
+
+      double ITS_16_23_val = 0, ITS_23_5_val = 0;
+
+      /*
+       * Its possible that using 3 for a missing region is not the correct
+       * thing to do
+       *
+
+      if (mSimilarityMatrix_16_23.containsKey(sample1)) {
+         correlationMap_16_23 = mSimilarityMatrix_16_23.get(sample1);
+
+         //TODO changed the return value of standardizeCorrelation to be the
+         //value passed to it. This is because I think I should troubleshoot
+         //against the correlations to be sure I'm getting similar results as
+         //what I had gotten previously
+
+         ITS_16_23_val = correlationMap_16_23.containsKey(sample2) ?
+          standardizeCorrelation(correlationMap_16_23.get(sample2)) : 0;
+
+         //System.out.printf("16_23: %.03f, 16_23_corr: %.03f\n",
+          //ITS_16_23_val, correlationMap_16_23.get(sample2));
+      }
+      
+      if (mSimilarityMatrix_23_5.containsKey(sample1)) {
+         correlationMap_23_5 = mSimilarityMatrix_23_5.get(sample1);
+
+         ITS_23_5_val = correlationMap_23_5.containsKey(sample2) ?
+          standardizeCorrelation(correlationMap_23_5.get(sample2)) : 0;
+      }
+
+      return ITS_16_23_val >= distThreshold_16_23 && ITS_23_5_val >= distThreshold_23_5;
    }
 
    public boolean hasCorrelation(Isolate sample1, Isolate sample2) {
-      boolean has16_23Correlation = similarityMatrix_16_23.containsKey(sample1) &&
-       similarityMatrix_16_23.get(sample1).containsKey(sample2);
+      boolean has16_23Correlation = mSimilarityMatrix_16_23.containsKey(sample1) &&
+       mSimilarityMatrix_16_23.get(sample1).containsKey(sample2);
 
-      boolean has23_5Correlation = similarityMatrix_23_5.containsKey(sample1) &&
-       similarityMatrix_23_5.get(sample1).containsKey(sample2);
+      boolean has23_5Correlation = mSimilarityMatrix_23_5.containsKey(sample1) &&
+       mSimilarityMatrix_23_5.get(sample1).containsKey(sample2);
 
       return has16_23Correlation || has23_5Correlation;
    }
+   */
 
+   public boolean hasCorrelation(Isolate isolate_A, Isolate isolate_B) {
+      return mSimilarityMatrix.containsKey(isolate_A) &&
+       mSimilarityMatrix.get(isolate_A).containsKey(isolate_B);
+   }
+
+   public void addCorrelation(IsolateCorrelation correlation) {
+      Isolate isolate_A = correlation.getIsolateOne();
+      Isolate isolate_B = correlation.getIsolateTwo();
+
+      if (!mSimilarityMatrix.containsKey(isolate_A)) {
+         mSimilarityMatrix.put(isolate_A, new HashMap<Isolate, IsolateCorrelation>());
+      }
+
+      mSimilarityMatrix.get(isolate_A).put(isolate_B, correlation);
+
+      addIsolate(isolate_A);
+      addIsolate(isolate_B);
+   }
+
+   private void addIsolate(Isolate isolate) {
+      if (!mIsolateMapping.containsKey(isolate.getDay())) {
+         mIsolateMapping.put(isolate.getDay(), new ArrayList<Isolate>());
+      }
+
+      if (!mIsolateMapping.get(isolate.getDay()).contains(isolate)) {
+         mIsolateMapping.get(isolate.getDay()).add(isolate);
+      }
+   }
+
+   /*
    public void addSimilarity(IsolateRegion region, Isolate sample1, Isolate sample2, double similarity) {
       add(region, sample1, sample2, similarity);
       add(region, sample2, sample1, similarity);
    }
 
    private void add(IsolateRegion region, Isolate sample1, Isolate sample2, double similarity) {
-      Map<Isolate, Map<Isolate, Double>> similarityMatrix = null;
+      Map<Isolate, Map<Isolate, Double>> mSimilarityMatrix = null;
       Map<Isolate, Double> correlationMap = null;
 
       switch (region) {
          case ITS_16_23:
-            similarityMatrix = similarityMatrix_16_23;
+            mSimilarityMatrix = mSimilarityMatrix_16_23;
             break;
          case ITS_23_5:
-            similarityMatrix = similarityMatrix_23_5;
+            mSimilarityMatrix = mSimilarityMatrix_23_5;
             break;
          default:
             System.err.println("Invalid region: " + region);
@@ -50,52 +160,66 @@ public class IsolateSimilarityMatrix {
       }
 
       //the isolate does not yet exist in the mapping, add a new map for it
-      correlationMap = similarityMatrix.containsKey(sample1) ?
-       similarityMatrix.get(sample1) : new HashMap<Isolate, Double>();
+      correlationMap = mSimilarityMatrix.containsKey(sample1) ?
+       mSimilarityMatrix.get(sample1) : new HashMap<Isolate, Double>();
 
       //add the similarity value between sample 1 and sample 2
       correlationMap.put(sample2, similarity);
       //associate sample2 with sample 1
-      similarityMatrix.put(sample1, correlationMap);
+      mSimilarityMatrix.put(sample1, correlationMap);
    }
 
    public double getSimilarity(Isolate sample1, Isolate sample2) {
       Map<Isolate, Double> correlationMap_16_23 = null;
       Map<Isolate, Double> correlationMap_23_5 = null;
 
-      double ITS_16_23_val = 3, ITS_23_5_val = 3;
+      double ITS_16_23_val = 0, ITS_23_5_val = 0;
 
       /*
        * Its possible that using 3 for a missing region is not the correct
        * thing to do
-       */
+       *
 
-      if (similarityMatrix_16_23.containsKey(sample1)) {
-         correlationMap_16_23 = similarityMatrix_16_23.get(sample1);
+      if (mSimilarityMatrix_16_23.containsKey(sample1)) {
+         correlationMap_16_23 = mSimilarityMatrix_16_23.get(sample1);
+
+         //TODO changed the return value of standardizeCorrelation to be the
+         //value passed to it. This is because I think I should troubleshoot
+         //against the correlations to be sure I'm getting similar results as
+         //what I had gotten previously
 
          ITS_16_23_val = correlationMap_16_23.containsKey(sample2) ?
-          standardizeCorrelation(correlationMap_16_23.get(sample2)) : 3;
+          standardizeCorrelation(correlationMap_16_23.get(sample2)) : 0;
 
          //System.out.printf("16_23: %.03f, 16_23_corr: %.03f\n",
           //ITS_16_23_val, correlationMap_16_23.get(sample2));
       }
       
-      if (similarityMatrix_23_5.containsKey(sample1)) {
-         correlationMap_23_5 = similarityMatrix_23_5.get(sample1);
+      if (mSimilarityMatrix_23_5.containsKey(sample1)) {
+         correlationMap_23_5 = mSimilarityMatrix_23_5.get(sample1);
 
          ITS_23_5_val = correlationMap_23_5.containsKey(sample2) ?
-          standardizeCorrelation(correlationMap_23_5.get(sample2)) : 3;
+          standardizeCorrelation(correlationMap_23_5.get(sample2)) : 0;
       }
 
+      double total = ITS_16_23_val + ITS_23_5_val;
 
-      return ITS_16_23_val + ITS_23_5_val;
+      if (ITS_16_23_val > 0 && ITS_23_5_val > 0) {
+         return total / 2;
+      }
+
+      return total;
    }
+   */
 
    private double standardizeCorrelation(Double correlation) {
+      return correlation;
+      /*
       if (correlation < 95) return 0;
       else if (correlation < 98) return 0;
       else if (correlation < 99.7) return 3;
       else return 5;
+      */
    }
 
    //TODO add toString()

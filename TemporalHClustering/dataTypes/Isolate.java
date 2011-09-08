@@ -12,6 +12,7 @@ public class Isolate {
    private String mIsolateName;
    private SampleMethod mGroup;
    private int day;
+   private boolean isClustered;
    //private Map<Isolate, Double> mCorrMap; //mapping from isolateName to correlation
 
    public Isolate(String name) {
@@ -23,7 +24,7 @@ public class Isolate {
       if (name.charAt(0) == 'a' ||
           name.charAt(0) == 'b' ||
           name.charAt(0) == 'c') {
-         name = name .substring(1);
+         name = name.substring(1);
       }
 
 
@@ -36,6 +37,8 @@ public class Isolate {
        */
       day = Integer.parseInt(mIsolateName.substring(1, mIsolateName.indexOf('-')));
       //mCorrMap = null;
+
+      isClustered = false;
    }
 
    public Isolate(String name, Map<Isolate, Double> newCorrMap) {
@@ -43,6 +46,8 @@ public class Isolate {
       mGroup = SampleMethod.getMethod(mIsolateName.charAt(0));
       day = Integer.parseInt(String.valueOf(mIsolateName.charAt(1)));
       //mCorrMap = newCorrMap;
+
+      isClustered = false;
    }
 
    public String getName() {
@@ -55,6 +60,14 @@ public class Isolate {
 
    public int getDay() {
       return day;
+   }
+
+   public boolean hasBeenClustered() {
+      return isClustered;
+   }
+
+   public void setClustered(boolean status) {
+      isClustered = status;
    }
 
    /*

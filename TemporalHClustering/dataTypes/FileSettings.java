@@ -2,7 +2,7 @@ package TemporalHClustering.dataTypes;
 
 public class FileSettings {
    private IsolateRegion mRegion;
-   private double mLowerThreshold, mUpperThreshold;
+   private double mDistThreshold, mLowerThreshold, mUpperThreshold;
    private Cluster.distType mClusterDistType;
 
    public FileSettings() {
@@ -20,6 +20,14 @@ public class FileSettings {
 
    public IsolateRegion getRegion() {
       return mRegion;
+   }
+
+   public void setDistanceThreshold(double distThreshold) {
+      mDistThreshold = distThreshold;
+   }
+
+   public double getDistanceThreshold() {
+      return mDistThreshold;
    }
 
    public void setLowerThreshold(double lowThreshold) {

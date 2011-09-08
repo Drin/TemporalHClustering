@@ -1,7 +1,9 @@
 package TemporalHClustering.dataParser;
 
 import TemporalHClustering.dataTypes.Isolate;
+import TemporalHClustering.dataTypes.IsolateCorrelation;
 import TemporalHClustering.dataTypes.IsolateRegion;
+import TemporalHClustering.dataTypes.Connectivity;
 
 import TemporalHClustering.dataStructures.IsolateSimilarityMatrix;
 
@@ -16,19 +18,64 @@ import java.util.ArrayList;
 public class IsolateFileParser {
    private boolean mTransform = true;
    private File mFile = null;
-   private double mLowerThreshold, mUpperThreshold;
+   private double mDistThreshold, mLowerThreshold, mUpperThreshold;
    private IsolateRegion mRegion;
 
-   public IsolateFileParser(File parseFile, IsolateRegion region, double lower, double upper) {
+   public IsolateFileParser(File parseFile, IsolateRegion region, double dist, double lower, double upper) {
       mFile = parseFile;
       mRegion = region;
+      mDistThreshold = dist;
       mLowerThreshold = lower;
       mUpperThreshold = upper;
    }
 
-   public Map<Integer, List<Isolate>> extractData(IsolateSimilarityMatrix similarityMatrix) {
+   /*
+    * New return value:
+    *    Data structure that should contain two separate mappings for "green"
+    *    links (strongly connected isolates) and "yellow" links (squishily
+    *    connected isolates).
+    *
+    *    Each mapping should provide the ability to walk the isolates in a way
+    *    appropriate for the experimentally imposed structure. Each mapping
+    *    should also contain the correlation values.
+    *
+    *    Correlations should be indexed by isolate names. Isolates should be
+    *    stored in sample groups, days, and strength of connectivity.
+    *
+    *    Foreach strength of connectivity {
+    *       Foreach day {
+    *          Foreach sample group {
+    *             cluster(group)
+    *
+    *          }
+    *
+    *          cluster(group 1 & 2)
+    *          cluster(group 1-2 & 3)
+    *          ...
+    *
+    *          cluster(day 1, 2, ..., n - 1 & n)
+    *       }
+    *    }
+    *
+    *
+    */
+   //IsolateSimilarityMatrix can contain a mapping of days to isolates
+   //Connectivity can be used as an index into several matrices of correlations
+   //MARKER
+   //public Map<Integer, List<Isolate>> extractData(IsolateSimilarityMatrix similarityMatrix) {
+   public Map<Connectivity, IsolateSimilarityMatrix> extractData() {
       Map<Integer, Isolate> isolateIdMap = new HashMap<Integer, Isolate>();
-      Map<Integer, List<Isolate>> dataMap = new LinkedHashMap<Integer, List<Isolate>>();
+      //Map<Integer, List<Isolate>> dataMap = new LinkedHashMap<Integer, List<Isolate>>();
+
+      Map<Connectivity, IsolateSimilarityMatrix> isolateNetworks =
+       new HashMap<Connectivity, IsolateSimilarityMatrix>();
+      isolateNetworks.put(Connectivity.STRONG, new IsolateSimilarityMatrix());
+      isolateNetworks.put(Connectivity.WEAK, new IsolateSimilarityMatrix());
+
+      //IsolateSimilarityMatrix strongSimilarityMatrix = new IsolateSimilarityMatrix();
+      //IsolateSimilarityMatrix weakSimilarityMatrix = new IsolateSimilarityMatrix();
+      //Map<Integer, List<Isolate>> strongIsolateMap = new LinkedHashMap<Integer, List<Isolate>>();
+      //Map<Integer, List<Isolate>> weakIsolateMap = new LinkedHashMap<Integer, List<Isolate>>();
 
       Scanner fileParser = null;
 
@@ -54,11 +101,19 @@ public class IsolateFileParser {
              new Isolate(isolateTuple[isolateNdx].replaceAll("\"", "").toLowerCase());
 
             isolateIdMap.put(isolateNdx - 1, newIsolate);
+            //TODO add new Lists for both isolate maps
+            /*
+             * MARKER
             if (!dataMap.containsKey(newIsolate.getDay())) {
                dataMap.put(newIsolate.getDay(), new ArrayList<Isolate>());
             }
+            */
          }
       }
+
+      //TODO
+      //IsolateSimilarityMatrix similarityMatrix will be declared here and used
+      //as an alias to strong similarity matrix or weak similarity matrix
 
       /*
        * create correlations between Isolate Samples
@@ -78,9 +133,32 @@ public class IsolateFileParser {
          }
 
          for (int colNdx = 1; colNdx < tuplesString.length; colNdx++) {
+            Isolate otherIsolate = isolateIdMap.get(colNdx - 1);
+
             try {
                double correlation = Double.parseDouble(tuplesString[colNdx]);
+               if (mTransform) {
+                  correlation = correlation > mUpperThreshold ? 100 :
+                   correlation < mLowerThreshold ? 0 : correlation;
+               }
 
+               //MARKER new code
+               IsolateSimilarityMatrix similarityMatrix = null;
+               IsolateCorrelation isolateCorr = new IsolateCorrelation(currentIsolate, otherIsolate);
+
+               switch (mRegion) {
+                  case ITS_16_23:
+                     isolateCorr.set16_23(correlation);
+                     break;
+                  case ITS_23_5:
+                     isolateCorr.set23_5(correlation);
+                     break;
+                  default:
+                     System.err.println("Invalid region: " + mRegion);
+                     break;
+               }
+
+               /* MARKER
                if (mTransform) {
                   //transform the correlation thusly:
                   //    if > upperThreshold replace with 100 (exact match)
@@ -95,9 +173,30 @@ public class IsolateFileParser {
                   /*
                   corrMap.put(isolateIdMap.get(colNdx - 1),
                    Double.parseDouble(tuplesString[colNdx]));
-                   */
+                   *
                }
-               similarityMatrix.addSimilarity(mRegion, currentIsolate, isolateIdMap.get(colNdx - 1), correlation);
+               */
+
+               //MARKER this is new code
+               if (correlation > mUpperThreshold) {
+                  similarityMatrix = isolateNetworks.get(Connectivity.STRONG);
+               }
+               /*
+               else if (correlation > mLowerThreshold) {
+                  similarityMatrix = isolateNetworks.get(Connectivity.WEAK);
+               }
+               */
+               else {
+                  similarityMatrix = isolateNetworks.get(Connectivity.WEAK);
+                  //similarityMatrix = isolateNetworks.get(Connectivity.NONE);
+               }
+
+               //colNdx - 1 is because the csv is 1-indexed while the
+               //dataStructures used here are 0-indexed
+               //MARKER
+               //similarityMatrix.addSimilarity(mRegion, currentIsolate, isolateIdMap.get(colNdx - 1), correlation);
+
+               similarityMatrix.addCorrelation(isolateCorr);
                //System.out.printf("correlation: %.03f beta: %.02f alpha: %.02f\n",
                 //correlation, mUpperThreshold, mLowerThreshold);
             }
@@ -112,13 +211,14 @@ public class IsolateFileParser {
          //currentIsolate.setCorrMap(corrMap);
 
          //add the isolateSample to the list of isolateSamples for its day
-         dataMap.get(currentIsolate.getDay()).add(currentIsolate);
+         //MARKER similarityMatrix now has the dataMap
+         //dataMap.get(currentIsolate.getDay()).add(currentIsolate);
 
          //dataMap.put(currentIsolate.getDay(), currentIsolate);
          //csvData.put(isolateName, tuple);
          //correlationMatrix.add(tuple);
       }
 
-      return dataMap;
+      return isolateNetworks;
    }
 }

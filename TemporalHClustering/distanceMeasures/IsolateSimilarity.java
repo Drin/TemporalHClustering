@@ -7,7 +7,7 @@ import TemporalHClustering.dataTypes.SampleMethod;
 public class IsolateSimilarity {
 
    public static double getCorrelation(IsolateSimilarityMatrix matrix, Isolate sample1, Isolate sample2) {
-      return matrix.getSimilarity(sample1, sample2);
+      return matrix.getCorrelationVal(sample1, sample2);
    }
 
    public static int getSimilarity(IsolateSimilarityMatrix matrix1, IsolateSimilarityMatrix matrix2,
