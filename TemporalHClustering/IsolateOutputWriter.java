@@ -96,7 +96,7 @@ public class IsolateOutputWriter {
       for (int ndxOne = 0; ndxOne < isolateList.size(); ndxOne++) {
          clusterOutput += isolateList.get(ndxOne);
          for (int ndxTwo = 0; ndxTwo < isolateList.size(); ndxTwo++) {
-            clusterOutput += "\t" + similarityMatrix.getSimilarity(
+            clusterOutput += "\t" + similarityMatrix.getCorrelationVal(
              isolateList.get(ndxOne), isolateList.get(ndxTwo));
          }
          clusterOutput += "\n";
@@ -156,7 +156,9 @@ public class IsolateOutputWriter {
          xmlWriter = new BufferedWriter(new FileWriter(
           new File(outputFileName)));
 
+         xmlWriter.write("<IsolateClusters>\n");
          xmlWriter.write(xmlOutput);
+         xmlWriter.write("</IsolateClusters>");
          xmlWriter.close();
       }
       catch(Exception e1) {
