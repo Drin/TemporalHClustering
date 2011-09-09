@@ -60,7 +60,7 @@ public class HClustering {
    //private double mThresholding = 6.5;
    //private double mThresholding = 99.7;
 
-   private static double defaultThreshold = 99.7;
+   private static double defaultThreshold = 99.77;
    private double mThresholding = -1;
    private int mNumRegions;
 
@@ -164,15 +164,32 @@ public class HClustering {
          clusters = clusterToDate(clusters, currClusters, type);
       }
 
+      System.out.printf("\n\n================\nFINISHED STAGE 1. CLUSTERING SQUISHIES\n" +
+       "===================\n\n");
       
       similarityMatrix = mIsolateNetworks.get(Connectivity.WEAK);
       isolateMap = similarityMatrix.getIsolateMap();
 
+      /*
+       * this is so that when doing the second pass through all of the clusters
+       * squishy correlations will also be known
+       */
+      for (ClusterDendogram clust : clusters) {
+         clust.getCluster().setSimilarityMatrix(similarityMatrix);
+      }
+
       for (int sampleDay : isolateMap.keySet()) {
          for (Isolate isolate : isolateMap.get(sampleDay)) {
-            clusters = clusterWeakIsolates(similarityMatrix, clusters, isolate, type);
+            //clusters = clusterWeakIsolates(similarityMatrix, clusters, isolate, type);
+            if (!isolate.hasBeenClustered()) {
+               Cluster newCluster = new Cluster(similarityMatrix, isolate);
+               Dendogram newDendogram = new DendogramLeaf(isolate);
+               clusters.add(new ClusterDendogram(newCluster, newDendogram));
+            }
          }
       }
+
+      clusters = clusterGroup(clusters, type);
 
       return clusters;
    }
@@ -461,6 +478,9 @@ public class HClustering {
             //System.out.printf("minNdx X: %d minNdx Y: %d clustersLength: %d", (int) minNdx.getX(), (int) minNdx.getY(), clusters.size());
             Cluster clusterOne = clusters.get((int) minNdx.getX()).getCluster();
             Cluster clusterTwo = clusters.get((int) minNdx.getY()).getCluster();
+
+            System.out.printf("combining clusters:\n\n%s\n\n%s\n", clusterOne, clusterTwo);
+
             Cluster combinedCluster = new Cluster(clusterOne.unionWith(clusterTwo));
 
             //using minNdx for dendogram one for consistency and readability
@@ -488,6 +508,7 @@ public class HClustering {
       /*
        * clustering between days uses just correlations
        */
+      //System.out.printf("\n***clustering to date***\n");
       for (ClusterDendogram newClusterDend : dailyClusters) {
          Cluster newCluster = newClusterDend.getCluster();
 
@@ -499,11 +520,22 @@ public class HClustering {
             Cluster currClust = clusters.get(clustNdx).getCluster();
             double clustDist = newCluster.corrDistance(currClust, type);
 
+            /*
+            System.out.printf("\n\nnewCluster: \n\t%s\n\ncurrClust:\n\t%s\n\n", newCluster, currClust);
+            System.out.printf("clustDist: %.03f\n", clustDist);
+            */
+
             //if (clustDist < minDist && clustDist < mLowerThreshold) {
             //System.out.println("cluster to date ward's distance: " + clustDist);
             //if (clustDist < minDist && clustDist >= mUpperThreshold) {
+            /*
+            System.out.printf("is %.03f > %.03f? %s\n\n", clustDist, maxSimilarity, (clustDist > maxSimilarity));
+            System.out.printf("mThreshold = %.03f\n", mThresholding);
+            */
+
             if (clustDist > maxSimilarity && clustDist > mThresholding) {
                maxSimilarity = clustDist;
+               //System.out.printf("maxSimilarity: %.03f\n", maxSimilarity);
                closeClusterNdx = clustNdx;
             }
          }
@@ -524,6 +556,7 @@ public class HClustering {
          }
       }
       //System.out.printf("clusters combined into size %d\n", clusters.size());
+      //System.out.printf("\n***Finished clustering new day's clusters***\n");
 
       return clusters;
    }

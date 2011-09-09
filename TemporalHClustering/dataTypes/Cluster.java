@@ -55,6 +55,10 @@ public class Cluster {
       return isolates;
    }
 
+   public void setSimilarityMatrix(IsolateSimilarityMatrix similarityMatrix) {
+      this.similarityMatrix = similarityMatrix;
+   }
+
    /*
    public double[] getCentroid() {
       return centroid;
@@ -322,11 +326,17 @@ public class Cluster {
                for (int otherNdx = 0; otherNdx < otherCluster.isolates.size(); otherNdx++) {
                   //totalDist += 100 - IsolateSimilarity.findCorrelation(this.isolates.get(dataNdx),
                   double corrVal = similarityMatrix.getCorrelationVal(
-                   this.isolates.get(dataNdx), otherCluster.isolates.get(otherNdx));
+                   otherCluster.isolates.get(otherNdx), this.isolates.get(dataNdx));
+
+                  System.out.printf("correlation between %s and %s: %.03f\n",
+                   otherCluster.isolates.get(otherNdx), this.isolates.get(dataNdx), corrVal);
 
                   if (corrVal == 0) {
-                     corrVal = otherCluster.similarityMatrix.getCorrelationVal(
+                     corrVal = similarityMatrix.getCorrelationVal(
                       this.isolates.get(dataNdx), otherCluster.isolates.get(otherNdx));
+
+                     System.out.printf("*reverse*\ncorrelation between %s and %s: %.03f\n",
+                      this.isolates.get(dataNdx), otherCluster.isolates.get(otherNdx), corrVal);
                   }
 
                   totalDist += corrVal;
@@ -562,6 +572,69 @@ public class Cluster {
       }
 
       return cytoFormat;
+   }
+
+   public String toTemporalChartFormat(int clusterNum) {
+      String tempOutput = "";
+      int numDays = 14;
+
+      //will display Day:, 1, 2, 3, ... for csv formatted temporal diagram
+      for (int day = 1; day <= numDays; day++) {
+         tempOutput += ", " + ;
+      }
+
+      //map representing day -> num isolates in the group for that day
+      Map<Integer, Integer> fecalMap = new LinkedHashMap<Integer, Integer>();
+      Map<Integer, Integer> immMap = new LinkedHashMap<Integer, Integer>();
+      Map<Integer, Integer> laterMap = new LinkedHashMap<Integer, Integer>();
+      Map<Integer, Integer> deepMap = new LinkedHashMap<Integer, Integer>();
+
+      for (Isolate sample : isolates) {
+         Map<Integer, Integer> sampleMap = null;
+
+         String sampleName = sample.getName();
+         //if isolate name is 'f14-1' then extract 14 as the day
+         int day = Integer.parseInt(sampleName.substring(1, sampleName.indexOf("-")));
+         //if isolate name is 'f14-1' then extract 1 as the isolateNum
+         int isolateNum = Integer.parseInt(sampleName.substring(sampleName.indexOf("-") + 1, sampleName.length()));
+         int isolateCount = 0;
+         
+         //just so that we are adding to the correct map
+         switch (sample.getSampleMethod()) {
+            case FECAL:
+               sampleMap = fecalMap;
+               break;
+
+            case IMM:
+               sampleMap = immMap;
+               break;
+
+            case LATER:
+               sampleMap = laterMap;
+               break;
+
+            case DEEP:
+               sampleMap = deepMap;
+         }
+
+         if (!sampleMap.containsKey(day)) {
+            sampleMap.put(day, 1);
+         }
+         else {
+            sampleMap.put(day, sampleMap.get(day) + 1);
+         }
+      }
+
+      //TODO replace the data string with the counts from above mappings. may
+      //move this to IsolateOutputWriter and simply have this method return the
+      //string of isolate counts
+      //
+      //String series = "{ name: 'Fecal', data: [4, 2, 4, 3, 2, 4, 0, 4, 1, 4, 4, 0, 0, 2] }";
+
+      //tempOutput += String.format("%s\n%s\n%s%s%s%s\n", "cluster_" + clusterNum,
+       //diagramHeader, toIsolateTable(fecalMap), toIsolateTable(immMap), toIsolateTable(laterMap), toIsolateTable(deepMap));
+
+      return tempOutput;
    }
 
    public String toTemporalFormat(int clusterNum) {

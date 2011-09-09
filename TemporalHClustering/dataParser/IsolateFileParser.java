@@ -178,25 +178,27 @@ public class IsolateFileParser {
                */
 
                //MARKER this is new code
+               //if correlation > mUpperThreshold add to strong network
+               //no matter what, add to weak network, so that when the strong
+               //network matrix is replaced in each cluster (p.s. this will
+               //HAVE to be redesigned. super shitty.) it will not lose
+               //information, only gain information
                if (correlation > mUpperThreshold) {
-                  similarityMatrix = isolateNetworks.get(Connectivity.STRONG);
+                  isolateNetworks.get(Connectivity.STRONG).addCorrelation(isolateCorr);
                }
                /*
                else if (correlation > mLowerThreshold) {
                   similarityMatrix = isolateNetworks.get(Connectivity.WEAK);
                }
                */
-               else {
-                  similarityMatrix = isolateNetworks.get(Connectivity.WEAK);
+               isolateNetworks.get(Connectivity.WEAK).addCorrelation(isolateCorr);
                   //similarityMatrix = isolateNetworks.get(Connectivity.NONE);
-               }
 
                //colNdx - 1 is because the csv is 1-indexed while the
                //dataStructures used here are 0-indexed
                //MARKER
                //similarityMatrix.addSimilarity(mRegion, currentIsolate, isolateIdMap.get(colNdx - 1), correlation);
 
-               similarityMatrix.addCorrelation(isolateCorr);
                //System.out.printf("correlation: %.03f beta: %.02f alpha: %.02f\n",
                 //correlation, mUpperThreshold, mLowerThreshold);
             }
