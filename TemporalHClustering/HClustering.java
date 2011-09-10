@@ -112,6 +112,7 @@ public class HClustering {
          IsolateOutputWriter.outputClusters(clustDends, outputFileDir, outputFileName + ".xml");
          IsolateOutputWriter.outputCytoscapeFormat(clustDends, outputFileName);
          IsolateOutputWriter.outputTemporalClusters(clustDends, outputFileName);
+         IsolateOutputWriter.outputTemporalCharts(clustDends, outputFileName);
       }
 
       return success;
@@ -544,6 +545,7 @@ public class HClustering {
          //oldCluster U newCluster
          if (closeClusterNdx != -1) {
             Cluster closeCluster = clusters.get(closeClusterNdx).getCluster();
+
             Dendogram newDendogram = new DendogramNode(maxSimilarity, newClusterDend.getDendogram(),
              clusters.get(closeClusterNdx).getDendogram());
             ClusterDendogram newClustDend = new ClusterDendogram(

@@ -18,6 +18,37 @@ import java.util.ArrayList;
 
 public class IsolateOutputWriter {
 
+   public static void outputTemporalCharts(List<ClusterDendogram> clustDends, String filePrefix) {
+      String outFileName = filePrefix + "_temporalCharts.js";
+      String chartFormat = "";
+
+      int numCluster = -1;
+      for (ClusterDendogram clustDend : clustDends) {
+         Cluster tmpClust = clustDend.getCluster();
+         numCluster++;
+
+         String fecalSeries = tmpClust.getFecalSeries();
+         String immSeries = tmpClust.getImmSeries();
+         String laterSeries = tmpClust.getLaterSeries();
+         String deepSeries = tmpClust.getDeepSeries();
+
+         chartFormat += generateChart(numCluster, fecalSeries, immSeries, laterSeries, deepSeries);
+      }
+
+      try {
+         File outputFile = new File(outFileName);
+         BufferedWriter fileWriter = new BufferedWriter(new FileWriter(outputFile));
+
+         fileWriter.write(chartFormat);
+         fileWriter.close();
+      }
+      catch(Exception e1) {
+         //System.out.println("Error writing cluster to file");
+         e1.printStackTrace();
+         System.exit(1);
+      }
+   }
+
    public static void outputTemporalClusters(List<ClusterDendogram> clustDends, String filePrefix) {
       String outFileName = filePrefix + "_temporalDiagram.csv";
       String cytoFormat = "";
@@ -166,5 +197,11 @@ public class IsolateOutputWriter {
          e1.printStackTrace();
          System.exit(1);
       }
+   }
+
+   private static String generateChart(int clustNum, String fecalSeries,
+    String immSeries, String laterSeries, String deepSeries) {
+      return String.format("cluster%d:\n'Fecal' %s\n'Immediate' %s\n'Later' %s\n'Deep' %s\n",
+       clustNum, fecalSeries, immSeries, laterSeries, deepSeries);
    }
 }

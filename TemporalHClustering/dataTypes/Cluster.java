@@ -22,6 +22,9 @@ public class Cluster {
    private double sumSquaredError, minDist, maxDist, avgDist;
    private IsolateSimilarityMatrix similarityMatrix;
 
+   private String mFecalSeries = null, mImmSeries = null,
+    mLaterSeries = null, mDeepSeries = null;
+
    public Cluster(IsolateSimilarityMatrix matrix) {
       similarityMatrix = matrix;
       isolates = new ArrayList<Isolate>();
@@ -574,14 +577,30 @@ public class Cluster {
       return cytoFormat;
    }
 
-   public String toTemporalChartFormat(int clusterNum) {
+   public String getFecalSeries() {
+      if (mFecalSeries == null) getSeriesCounts();
+      return mFecalSeries;
+   }
+
+   public String getImmSeries() {
+      if (mImmSeries == null) getSeriesCounts();
+      return mImmSeries;
+   }
+
+   public String getLaterSeries() {
+      if (mLaterSeries == null) getSeriesCounts();
+      return mLaterSeries;
+   }
+
+   public String getDeepSeries() {
+      if (mDeepSeries == null) getSeriesCounts();
+      return mDeepSeries;
+   }
+
+   public void getSeriesCounts() {
       String tempOutput = "";
       int numDays = 14;
 
-      //will display Day:, 1, 2, 3, ... for csv formatted temporal diagram
-      for (int day = 1; day <= numDays; day++) {
-         tempOutput += ", " + ;
-      }
 
       //map representing day -> num isolates in the group for that day
       Map<Integer, Integer> fecalMap = new LinkedHashMap<Integer, Integer>();
@@ -634,7 +653,21 @@ public class Cluster {
       //tempOutput += String.format("%s\n%s\n%s%s%s%s\n", "cluster_" + clusterNum,
        //diagramHeader, toIsolateTable(fecalMap), toIsolateTable(immMap), toIsolateTable(laterMap), toIsolateTable(deepMap));
 
-      return tempOutput;
+      //will display Day:, 1, 2, 3, ... for csv formatted temporal diagram
+      
+      String fecalSeries = "", immSeries = "", laterSeries = "", deepSeries = "";
+
+      for (int day = 1; day <= numDays; day++) {
+         fecalSeries += "," + (fecalMap.containsKey(day) ? fecalMap.get(day) : 0);
+         immSeries += "," + (immMap.containsKey(day) ? immMap.get(day) : 0);
+         laterSeries += "," + (laterMap.containsKey(day) ? laterMap.get(day) : 0);
+         deepSeries += "," + (deepMap.containsKey(day) ? deepMap.get(day) : 0);
+      }
+
+      mFecalSeries = fecalSeries.substring(1);
+      mImmSeries = immSeries.substring(1);
+      mLaterSeries = laterSeries.substring(1);
+      mDeepSeries = deepSeries.substring(1);
    }
 
    public String toTemporalFormat(int clusterNum) {
