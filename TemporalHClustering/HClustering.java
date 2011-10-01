@@ -70,7 +70,7 @@ public class HClustering {
       super();
 
       mNumRegions = numRegions;
-      mThresholding = (defaultThreshold * mNumRegions);
+      mThresholding = defaultThreshold; //(defaultThreshold * mNumRegions);
 
 
       mLowerThreshold = 95;
@@ -91,85 +91,129 @@ public class HClustering {
       //handle command line arguments; sets dataFile and threshold
       success = parseArgs(args);
 
+      Map<String, Map<Integer, List<Isolate>>> dataMap = new HashMap<String, Map<Integer, List<Isolate>>>();
+
+      /*
+       * Each isolate similarity matrix holds a correlation for both regions
+       */
+      Map<Connectivity, IsolateSimilarityMatrix> isolateNetworks =
+       new HashMap<Connectivity, IsolateSimilarityMatrix>();
+
+      isolateNetworks.put(Connectivity.STRONG, new IsolateSimilarityMatrix());
+      isolateNetworks.put(Connectivity.WEAK, new IsolateSimilarityMatrix());
+
+      Cluster.distType type = null;
+      String dataFileName = null;
+      double distanceThreshold = -1, lowerThreshold = -1, upperThreshold = -1;
+
       for (File dataFile : dataFileMap.keySet()) {
          FileSettings settings = dataFileMap.get(dataFile);
 
-         //each point is a cluster, and we will combine two clusters in each iteration
-         List<ClusterDendogram> clustDends = clusterIsolates(dataFile, settings);
-         //System.err.println("clustDends length: " + clustDends.size());
+         dataFileName = dataFile.getName();
+         IsolateRegion region = settings.getRegion();
+         type = settings.getDistanceType();
+         distanceThreshold = settings.getDistanceThreshold();
+         lowerThreshold = settings.getLowerThreshold();
+         upperThreshold = settings.getUpperThreshold();
 
-         //if the isolates yielded NO clusters (wtf data disappear?) or
-         //if clusterIsolates returned null, then this was *NOT* a success
-         success = clustDends != null && !clustDends.isEmpty();
+         if (dataFile != null) {
+            IsolateFileParser parser = new IsolateFileParser(dataFile, settings);
 
-         String outputFileDir = String.format("ClusterResults/%s_%.02f_%.02f",
-          settings.getDistanceType(), settings.getLowerThreshold(), settings.getUpperThreshold());
+            //MARKER old code
+            //isolateMap = parser.extractData(similarityMatrix);
+            //mIsolateNetworks = parser.extractData();
+            parser.extractData(isolateNetworks);
+         }
 
-         String outputFileName = String.format("%s/%s", outputFileDir,
-          dataFile.getName().substring(0,
-          dataFile.getName().indexOf(".csv")));
-
-         IsolateOutputWriter.outputClusters(clustDends, outputFileDir, outputFileName + ".xml");
-         IsolateOutputWriter.outputCytoscapeFormat(clustDends, outputFileName);
-         IsolateOutputWriter.outputTemporalClusters(clustDends, outputFileName);
-         IsolateOutputWriter.outputTemporalCharts(clustDends, outputFileName);
+         System.out.println("strong Network size: " + isolateNetworks.get(Connectivity.STRONG).size());
       }
+
+      //each point is a cluster, and we will combine two clusters in each iteration
+      List<ClusterDendogram> clustDends = clusterIsolates(type, isolateNetworks);
+      //System.err.println("clustDends length: " + clustDends.size());
+
+      //if the isolates yielded NO clusters (wtf data disappear?) or
+      //if clusterIsolates returned null, then this was *NOT* a success
+      success = clustDends != null && !clustDends.isEmpty();
+
+      String outputFileDir = String.format("ClusterResults/%s_%.02f_%.02f", type, lowerThreshold, upperThreshold);
+
+      /*
+      String outputFileName = String.format("%s/%s", outputFileDir,
+       dataFile.getName().substring(0,
+       dataFile.getName().indexOf(".csv")));
+      */
+      String outputFileName = String.format("%s/%s", outputFileDir,
+       dataFileName.substring(0, dataFileName.indexOf(".csv")));
+
+      IsolateOutputWriter.outputClusters(clustDends, outputFileDir, outputFileName + ".xml");
+      IsolateOutputWriter.outputCytoscapeFormat(clustDends, outputFileName);
+      IsolateOutputWriter.outputTemporalClusters(clustDends, outputFileName);
+      IsolateOutputWriter.outputTemporalCharts(clustDends, outputFileName);
 
       return success;
    }
 
-   private List<ClusterDendogram> clusterIsolates(File dataFile, FileSettings settings) {
+   private List<ClusterDendogram> clusterIsolates(Cluster.distType type,
+    Map<Connectivity, IsolateSimilarityMatrix> isolateNetworks) {
+      /*
       IsolateRegion region = settings.getRegion();
       double distanceThreshold = settings.getDistanceThreshold();
       double lowerThreshold = settings.getLowerThreshold();
       double upperThreshold = settings.getUpperThreshold();
       Cluster.distType type = settings.getDistanceType();
+      */
 
       //mappings represent days to isolates
-      Map<Integer, List<Isolate>> isolateMap = null;
+      Map<String, Map<Integer, List<Isolate>>> technicianIsolateMap = null;
       //list of all constructed clusters
       List<ClusterDendogram> clusters = new ArrayList<ClusterDendogram>();
+      List<ClusterDendogram> technicianClusters = new ArrayList<ClusterDendogram>();
 
-      if (dataFile != null) {
-         IsolateFileParser parser = new IsolateFileParser(dataFile, region, distanceThreshold,
-          lowerThreshold, upperThreshold);
-
-         //MARKER old code
-         //isolateMap = parser.extractData(similarityMatrix);
-         mIsolateNetworks = parser.extractData();
-      }
+      /*
+       * Marker
+       */
 
       //MARKER new code. get the isolateMap from the similarity matrix now
       //also, multiple similarity matrices are stored in the isolate networks
       //map so that it is possible to iterate on correlations based on their
       //strength instead of just going all willy nilly
-      IsolateSimilarityMatrix similarityMatrix = mIsolateNetworks.get(Connectivity.STRONG);
-      isolateMap = similarityMatrix.getIsolateMap();
+      IsolateSimilarityMatrix similarityMatrix = isolateNetworks.get(Connectivity.STRONG);
+      technicianIsolateMap = similarityMatrix.getIsolateMap();
 
-      for (int sampleDay : isolateMap.keySet()) {
-         //Cluster the list of isolates in this day
-         List<ClusterDendogram> currClusters = clusterIsolateList(similarityMatrix,
-          isolateMap.get(sampleDay), type);
+      for (String technician : technicianIsolateMap.keySet()) {
+         Map<Integer, List<Isolate>> isolateMap = technicianIsolateMap.get(technician);
 
-         IsolateOutputWriter.outputClustersByDay(similarityMatrix, sampleDay, currClusters);
-         /*
-         System.err.println("currClusters length: " + currClusters.size());
-         /*
-         for (ClusterDendogram clustDend : currClusters) {
-            System.out.println(clustDend.getDendogram().getXML());
+         for (int sampleDay : isolateMap.keySet()) {
+            //Cluster the list of isolates in this day
+            List<ClusterDendogram> currClusters = clusterIsolateList(similarityMatrix,
+             isolateMap.get(sampleDay), type);
+
+            IsolateOutputWriter.outputClustersByDay(similarityMatrix, sampleDay, currClusters);
+            /*
+            System.err.println("currClusters length: " + currClusters.size());
+            /*
+            for (ClusterDendogram clustDend : currClusters) {
+               System.out.println(clustDend.getDendogram().getXML());
+            }
+            */
+
+            //System.err.printf("on day %d there are a total of %d clusters", sampleDay, clusters.size());
+            //Cluster all previous days with this day
+            clusters = clusterToDate(clusters, currClusters, type);
          }
-         */
 
-         //System.err.printf("on day %d there are a total of %d clusters", sampleDay, clusters.size());
-         //Cluster all previous days with this day
-         clusters = clusterToDate(clusters, currClusters, type);
+         technicianClusters.addAll(clusters);
+         clusters = new ArrayList<ClusterDendogram>();
       }
 
-      System.out.printf("\n\n================\nFINISHED STAGE 1. CLUSTERING SQUISHIES\n" +
-       "===================\n\n");
+      clusters = clusterGroup(technicianClusters, type);
+
+      //System.out.printf("\n\n================\nFINISHED STAGE 1. CLUSTERING SQUISHIES\n" +
+       //"===================\n\n");
       
-      similarityMatrix = mIsolateNetworks.get(Connectivity.WEAK);
-      isolateMap = similarityMatrix.getIsolateMap();
+      similarityMatrix = isolateNetworks.get(Connectivity.WEAK);
+      technicianIsolateMap = similarityMatrix.getIsolateMap();
 
       /*
        * this is so that when doing the second pass through all of the clusters
@@ -179,25 +223,30 @@ public class HClustering {
          clust.getCluster().setSimilarityMatrix(similarityMatrix);
       }
 
-      for (int sampleDay : isolateMap.keySet()) {
-         for (Isolate isolate : isolateMap.get(sampleDay)) {
-            //clusters = clusterWeakIsolates(similarityMatrix, clusters, isolate, type);
-            if (!isolate.hasBeenClustered()) {
-               Cluster newCluster = new Cluster(similarityMatrix, isolate);
-               Dendogram newDendogram = new DendogramLeaf(isolate);
-               clusters.add(new ClusterDendogram(newCluster, newDendogram));
+      for (String technician : technicianIsolateMap.keySet()) {
+         Map<Integer, List<Isolate>> isolateMap = technicianIsolateMap.get(technician);
+
+         for (int sampleDay : isolateMap.keySet()) {
+            for (Isolate isolate : isolateMap.get(sampleDay)) {
+               //clusters = clusterWeakIsolates(similarityMatrix, clusters, isolate, type);
+               if (!isolate.hasBeenClustered()) {
+                  Cluster newCluster = new Cluster(similarityMatrix, isolate);
+                  Dendogram newDendogram = new DendogramLeaf(isolate);
+                  clusters.add(new ClusterDendogram(newCluster, newDendogram));
+               }
             }
          }
       }
 
       clusters = clusterGroup(clusters, type);
 
+
       return clusters;
    }
 
    private List<ClusterDendogram> clusterWeakIsolates(IsolateSimilarityMatrix similarityMatrix,
     List<ClusterDendogram> clusters, Isolate isolate, Cluster.distType type) {
-      System.out.printf("starting weak clustering method...\n");
+      //System.out.printf("starting weak clustering method...\n");
 
       boolean hasChanged;
       double maxSimilarity = 0;
@@ -237,7 +286,7 @@ public class HClustering {
          //reset various variables
          closeClusters = new Point(-1, -1);
          maxSimilarity = 0;
-         System.out.printf("finishing weak clustering iteration...\n");
+         //System.out.printf("finishing weak clustering iteration...\n");
 
          //continue clustering until clusters do not change
       } while (hasChanged);
@@ -316,14 +365,14 @@ public class HClustering {
    }
 
    private List<ClusterDendogram> clusterGroup(List<ClusterDendogram> clusters, Cluster.distType type) {
-      System.out.printf("***clustering new group***\n");
+      //System.out.printf("***clustering new group***\n");
       Point closeClusters = new Point(-1, -1);
       //double minDist = Double.MAX_VALUE;
       double maxSimilarity = 0;
       boolean hasChanged;
 
       do {
-         System.out.printf("entering clustering loop...\n");
+         //System.out.printf("entering clustering loop...\n");
          hasChanged = false;
 
          for (int clustOne = 0; clustOne < clusters.size(); clustOne++) {
@@ -331,12 +380,12 @@ public class HClustering {
                Cluster cluster_A = clusters.get(clustOne).getCluster();
                Cluster cluster_B = clusters.get(clustTwo).getCluster();
 
-               System.out.printf("\n\ncluster A:\n\t%s\n\ncluster B:\n\t%s\n\n", cluster_A, cluster_B);
+               //System.out.printf("\n\ncluster A:\n\t%s\n\ncluster B:\n\t%s\n\n", cluster_A, cluster_B);
                //double clustDist = cluster_A.distance(cluster_B, type);
 
                //this will ensure that i'm only comparing based on correlations
                double clustDist = cluster_A.corrDistance(cluster_B, type);
-               System.out.printf("clustDist: %.03f\n", clustDist);
+               //System.out.printf("clustDist: %.03f\n", clustDist);
                /*
                if (clustDist > 1) {
                   System.err.println("cluster group clustDist: " + clustDist + " between " + cluster_A + " and " + cluster_B);
@@ -353,11 +402,11 @@ public class HClustering {
                //System.out.printf("clustDist: %.03f\n", clustDist);
 
                //if (clustDist > minDist && clustDist > mThresholding ) {
-               System.out.printf("is %.03f > %.03f? %s\n\n", clustDist, maxSimilarity, (clustDist > maxSimilarity));
-               System.out.printf("mThreshold = %.03f\n", mThresholding);
+               //System.out.printf("is %.03f > %.03f? %s\n\n", clustDist, maxSimilarity, (clustDist > maxSimilarity));
+               //System.out.printf("mThreshold = %.03f\n", mThresholding);
                if (clustDist > maxSimilarity && clustDist > mThresholding) {
                   maxSimilarity = clustDist;
-                  System.out.printf("maxSimilarity: %.03f\n", maxSimilarity);
+                  //System.out.printf("maxSimilarity: %.03f\n", maxSimilarity);
                   closeClusters = new Point(clustOne, clustTwo);
                }
             }
@@ -378,12 +427,12 @@ public class HClustering {
          //reset various variables
          closeClusters = new Point(-1, -1);
          maxSimilarity = 0;
-         System.out.printf("finishing clustering iteration...\n");
+         //System.out.printf("finishing clustering iteration...\n");
 
          //continue clustering until clusters do not change
       } while (hasChanged);
 
-      System.out.printf("***Finished clustering group***\n");
+      //System.out.printf("***Finished clustering group***\n");
 
       return clusters;
    }
@@ -480,7 +529,7 @@ public class HClustering {
             Cluster clusterOne = clusters.get((int) minNdx.getX()).getCluster();
             Cluster clusterTwo = clusters.get((int) minNdx.getY()).getCluster();
 
-            System.out.printf("combining clusters:\n\n%s\n\n%s\n", clusterOne, clusterTwo);
+            //System.out.printf("combining clusters:\n\n%s\n\n%s\n", clusterOne, clusterTwo);
 
             Cluster combinedCluster = new Cluster(clusterOne.unionWith(clusterTwo));
 

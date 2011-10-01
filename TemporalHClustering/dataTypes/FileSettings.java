@@ -1,9 +1,12 @@
 package TemporalHClustering.dataTypes;
 
+import TemporalHClustering.dataStructures.IsolateSimilarityMatrix;
+
 public class FileSettings {
    private IsolateRegion mRegion;
    private double mDistThreshold, mLowerThreshold, mUpperThreshold;
    private Cluster.distType mClusterDistType;
+   private IsolateSimilarityMatrix mSimilarityMatrix;
 
    public FileSettings() {
       super();
@@ -52,6 +55,14 @@ public class FileSettings {
 
    public Cluster.distType getDistanceType() {
       return mClusterDistType;
+   }
+
+   public void setSimilarityMatrix(IsolateSimilarityMatrix similarityMatrix) {
+      mSimilarityMatrix = similarityMatrix;
+   }
+
+   public IsolateSimilarityMatrix getSimilarityMatrix() {
+      return mSimilarityMatrix;
    }
 
 }

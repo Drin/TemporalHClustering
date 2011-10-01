@@ -8,6 +8,7 @@ package TemporalHClustering.dataTypes;
 public class IsolateCorrelation {
    private Isolate mIsolateOne, mIsolateTwo;
    private Double mCorrelation_16_23, mCorrelation_23_5;
+   private double upperThreshold = 99.7, lowerThreshold = 95;
 
    public IsolateCorrelation(Isolate isolateA, Isolate isolateB) {
       super();
@@ -47,8 +48,17 @@ public class IsolateCorrelation {
    }
 
    public Double getCorrelation() {
-      if (mCorrelation_16_23 != null && mCorrelation_23_5 != null)
-         return mCorrelation_16_23 + mCorrelation_23_5;
+      if (mCorrelation_16_23 != null && mCorrelation_23_5 != null) {
+         if (mCorrelation_16_23 < lowerThreshold || mCorrelation_23_5 < lowerThreshold) {
+            return 0.0;
+         }
+         else if (mCorrelation_16_23 > upperThreshold && mCorrelation_23_5 > upperThreshold) {
+            return 100.0;
+         }
+         else {
+            return Math.min(mCorrelation_16_23, mCorrelation_23_5);
+         }
+      }
 
       else if (mCorrelation_16_23 == null && mCorrelation_23_5 == null)
          return null;

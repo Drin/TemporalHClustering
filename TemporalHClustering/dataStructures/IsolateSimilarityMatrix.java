@@ -8,11 +8,12 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 public class IsolateSimilarityMatrix {
    private Map<Isolate, Map<Isolate, IsolateCorrelation>> mSimilarityMatrix = null;
    //mIsolateMappingping maps days to the list of isolates collected on that day
-   private Map<Integer, List<Isolate>> mIsolateMapping = null;
+   private Map<String, Map<Integer, List<Isolate>>> mIsolateMapping = null;
 
    private final double INVALID_MAPPING = -2;
    private double distThreshold_16_23 = -1, distThreshold_23_5 = -1;
@@ -21,10 +22,14 @@ public class IsolateSimilarityMatrix {
       super();
 
       mSimilarityMatrix = new HashMap<Isolate, Map<Isolate, IsolateCorrelation>>();
-      mIsolateMapping = new HashMap<Integer, List<Isolate>>();
+      mIsolateMapping = new HashMap<String, Map<Integer, List<Isolate>>>();
    }
 
-   public Map<Integer, List<Isolate>> getIsolateMap() {
+   public int size() {
+      return mSimilarityMatrix.size();
+   }
+
+   public Map<String, Map<Integer, List<Isolate>>> getIsolateMap() {
       return mIsolateMapping;
    }
 
@@ -109,8 +114,19 @@ public class IsolateSimilarityMatrix {
    */
 
    public boolean hasCorrelation(Isolate isolate_A, Isolate isolate_B) {
-      return mSimilarityMatrix.containsKey(isolate_A) &&
-       mSimilarityMatrix.get(isolate_A).containsKey(isolate_B);
+      System.out.println("checking if has correlation...");
+      if ((mSimilarityMatrix.containsKey(isolate_A) &&
+       mSimilarityMatrix.get(isolate_A).containsKey(isolate_B)) ||
+       (mSimilarityMatrix.containsKey(isolate_B) &&
+       mSimilarityMatrix.get(isolate_B).containsKey(isolate_A))) {
+         //System.out.println(isolate_A + " and " + isolate_B + " are in the matrix");
+         System.out.println("finished checking if has correlation...");
+         return true;
+      }
+
+      //System.out.println(isolate_A + " and " + isolate_B + " are not in the matrix");
+      System.out.println("finished checking if has correlation...");
+      return false;
    }
 
    public void addCorrelation(IsolateCorrelation correlation) {
@@ -128,12 +144,18 @@ public class IsolateSimilarityMatrix {
    }
 
    private void addIsolate(Isolate isolate) {
-      if (!mIsolateMapping.containsKey(isolate.getDay())) {
-         mIsolateMapping.put(isolate.getDay(), new ArrayList<Isolate>());
+      if (!mIsolateMapping.containsKey(isolate.getTechnician())) {
+         mIsolateMapping.put(isolate.getTechnician(), new LinkedHashMap<Integer, List<Isolate>>());
       }
 
-      if (!mIsolateMapping.get(isolate.getDay()).contains(isolate)) {
-         mIsolateMapping.get(isolate.getDay()).add(isolate);
+      Map<Integer, List<Isolate>> innerIsolateMapping = mIsolateMapping.get(isolate.getTechnician());
+
+      if (!innerIsolateMapping.containsKey(isolate.getDay())) {
+         innerIsolateMapping.put(isolate.getDay(), new ArrayList<Isolate>());
+      }
+
+      if (!innerIsolateMapping.get(isolate.getDay()).contains(isolate)) {
+         innerIsolateMapping.get(isolate.getDay()).add(isolate);
       }
    }
 

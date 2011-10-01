@@ -4,6 +4,7 @@ import TemporalHClustering.dataTypes.Isolate;
 import TemporalHClustering.dataTypes.IsolateCorrelation;
 import TemporalHClustering.dataTypes.IsolateRegion;
 import TemporalHClustering.dataTypes.Connectivity;
+import TemporalHClustering.dataTypes.FileSettings;
 
 import TemporalHClustering.dataStructures.IsolateSimilarityMatrix;
 
@@ -18,15 +19,18 @@ import java.util.ArrayList;
 public class IsolateFileParser {
    private boolean mTransform = true;
    private File mFile = null;
+   private FileSettings mSettings = null;
    private double mDistThreshold, mLowerThreshold, mUpperThreshold;
    private IsolateRegion mRegion;
 
-   public IsolateFileParser(File parseFile, IsolateRegion region, double dist, double lower, double upper) {
+   public IsolateFileParser(File parseFile, FileSettings settings) {
       mFile = parseFile;
-      mRegion = region;
-      mDistThreshold = dist;
-      mLowerThreshold = lower;
-      mUpperThreshold = upper;
+      mSettings = settings;
+
+      mRegion = settings.getRegion();
+      mDistThreshold = settings.getDistanceThreshold();
+      mLowerThreshold = settings.getLowerThreshold();
+      mUpperThreshold = settings.getUpperThreshold();
    }
 
    /*
@@ -63,14 +67,19 @@ public class IsolateFileParser {
    //Connectivity can be used as an index into several matrices of correlations
    //MARKER
    //public Map<Integer, List<Isolate>> extractData(IsolateSimilarityMatrix similarityMatrix) {
-   public Map<Connectivity, IsolateSimilarityMatrix> extractData() {
+   //public Map<Connectivity, IsolateSimilarityMatrix> extractData(Map<String, Map<Integer, List<Isolate>>> dataMap) {
+   //public void extractData(Map<String, Map<Integer, List<Isolate>>> dataMap) {
+   public void extractData(Map<Connectivity, IsolateSimilarityMatrix> isolateNetworks) {
       Map<Integer, Isolate> isolateIdMap = new HashMap<Integer, Isolate>();
       //Map<Integer, List<Isolate>> dataMap = new LinkedHashMap<Integer, List<Isolate>>();
 
+      /*
+      IsolateSimilarityMatrix similarityMatrix = new IsolateSimilarityMatrix();
       Map<Connectivity, IsolateSimilarityMatrix> isolateNetworks =
        new HashMap<Connectivity, IsolateSimilarityMatrix>();
       isolateNetworks.put(Connectivity.STRONG, new IsolateSimilarityMatrix());
       isolateNetworks.put(Connectivity.WEAK, new IsolateSimilarityMatrix());
+      */
 
       //IsolateSimilarityMatrix strongSimilarityMatrix = new IsolateSimilarityMatrix();
       //IsolateSimilarityMatrix weakSimilarityMatrix = new IsolateSimilarityMatrix();
@@ -84,7 +93,8 @@ public class IsolateFileParser {
       }
       catch (java.io.FileNotFoundException fileErr) {
          System.out.println("could not find file: " + mFile);
-         return null;
+         //return null;
+         return;
       }
 
       /*
@@ -101,6 +111,7 @@ public class IsolateFileParser {
              new Isolate(isolateTuple[isolateNdx].replaceAll("\"", "").toLowerCase());
 
             isolateIdMap.put(isolateNdx - 1, newIsolate);
+
             //TODO add new Lists for both isolate maps
             /*
              * MARKER
@@ -142,9 +153,31 @@ public class IsolateFileParser {
                    correlation < mLowerThreshold ? 0 : correlation;
                }
 
+               IsolateCorrelation isolateCorr = null;
+               IsolateSimilarityMatrix strongMatrix = isolateNetworks.get(Connectivity.STRONG);
+               IsolateSimilarityMatrix weakMatrix = isolateNetworks.get(Connectivity.WEAK);
+
+               if (strongMatrix.hasCorrelation(currentIsolate, otherIsolate)) {
+                  isolateCorr = strongMatrix.getCorrelation(currentIsolate, otherIsolate);
+               }
+               else if (weakMatrix.hasCorrelation(currentIsolate, otherIsolate)) {
+                  isolateCorr = weakMatrix.getCorrelation(currentIsolate, otherIsolate);
+               }
+               else {
+                  System.out.println("does not have " + currentIsolate + " -> " + otherIsolate);
+                  isolateCorr = new IsolateCorrelation(currentIsolate, otherIsolate);
+
+                  if (correlation > mUpperThreshold) {
+                     isolateNetworks.get(Connectivity.STRONG).addCorrelation(isolateCorr);
+                  }
+                  else {
+                     isolateNetworks.get(Connectivity.WEAK).addCorrelation(isolateCorr);
+                  }
+               }
+
                //MARKER new code
-               IsolateSimilarityMatrix similarityMatrix = null;
-               IsolateCorrelation isolateCorr = new IsolateCorrelation(currentIsolate, otherIsolate);
+               //IsolateSimilarityMatrix similarityMatrix = null;
+
 
                switch (mRegion) {
                   case ITS_16_23:
@@ -183,15 +216,14 @@ public class IsolateFileParser {
                //network matrix is replaced in each cluster (p.s. this will
                //HAVE to be redesigned. super shitty.) it will not lose
                //information, only gain information
-               if (correlation > mUpperThreshold) {
-                  isolateNetworks.get(Connectivity.STRONG).addCorrelation(isolateCorr);
-               }
+               //
+
                /*
-               else if (correlation > mLowerThreshold) {
-                  similarityMatrix = isolateNetworks.get(Connectivity.WEAK);
-               }
-               */
-               isolateNetworks.get(Connectivity.WEAK).addCorrelation(isolateCorr);
+                * This block of code was for constructing the separate similarity matrices
+                * where one held strongly connected correlations and the other weakly connected
+                * correlations.
+                */
+
                   //similarityMatrix = isolateNetworks.get(Connectivity.NONE);
 
                //colNdx - 1 is because the csv is 1-indexed while the
@@ -221,6 +253,7 @@ public class IsolateFileParser {
          //correlationMatrix.add(tuple);
       }
 
-      return isolateNetworks;
+      //mSettings.setSimilarityMatrix(similarityMatrix);
+      //return isolateNetworks;
    }
 }

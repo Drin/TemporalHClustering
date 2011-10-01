@@ -127,9 +127,9 @@ public class Cluster {
          }
       }
 
-      System.out.println("are these values the same?");
-      System.out.printf("average using isolate size: %d using count %d\n",
-       (total/isolates.size()), (total/count));
+      //System.out.println("are these values the same?");
+      //System.out.printf("average using isolate size: %d using count %d\n",
+       //(total/isolates.size()), (total/count));
 
       return total/count;
    }
@@ -331,15 +331,15 @@ public class Cluster {
                   double corrVal = similarityMatrix.getCorrelationVal(
                    otherCluster.isolates.get(otherNdx), this.isolates.get(dataNdx));
 
-                  System.out.printf("correlation between %s and %s: %.03f\n",
-                   otherCluster.isolates.get(otherNdx), this.isolates.get(dataNdx), corrVal);
+                  //System.out.printf("correlation between %s and %s: %.03f\n",
+                   //otherCluster.isolates.get(otherNdx), this.isolates.get(dataNdx), corrVal);
 
                   if (corrVal == 0) {
                      corrVal = similarityMatrix.getCorrelationVal(
                       this.isolates.get(dataNdx), otherCluster.isolates.get(otherNdx));
 
-                     System.out.printf("*reverse*\ncorrelation between %s and %s: %.03f\n",
-                      this.isolates.get(dataNdx), otherCluster.isolates.get(otherNdx), corrVal);
+                     //System.out.printf("*reverse*\ncorrelation between %s and %s: %.03f\n",
+                      //this.isolates.get(dataNdx), otherCluster.isolates.get(otherNdx), corrVal);
                   }
 
                   totalDist += corrVal;
@@ -600,6 +600,7 @@ public class Cluster {
    public void getSeriesCounts() {
       String tempOutput = "";
       int numDays = 14;
+      int technicianNdx = 0, groupNdx = 1, dayNdx = 2;
 
 
       //map representing day -> num isolates in the group for that day
@@ -613,7 +614,7 @@ public class Cluster {
 
          String sampleName = sample.getName();
          //if isolate name is 'f14-1' then extract 14 as the day
-         int day = Integer.parseInt(sampleName.substring(1, sampleName.indexOf("-")));
+         int day = Integer.parseInt(sampleName.substring(dayNdx, sampleName.indexOf("-")));
          //if isolate name is 'f14-1' then extract 1 as the isolateNum
          int isolateNum = Integer.parseInt(sampleName.substring(sampleName.indexOf("-") + 1, sampleName.length()));
          int isolateCount = 0;
@@ -673,6 +674,7 @@ public class Cluster {
    public String toTemporalFormat(int clusterNum) {
       String tempOutput = "";
       int numDays = 14;
+      int technicianNdx = 0, groupNdx = 1, dayNdx = 2;
 
       //will display Day:, 1, 2, 3, ... for csv formatted temporal diagram
       String diagramHeader = "Day:";
@@ -691,7 +693,7 @@ public class Cluster {
 
          String sampleName = sample.getName();
          //if isolate name is 'f14-1' then extract 14 as the day
-         int day = Integer.parseInt(sampleName.substring(1, sampleName.indexOf("-")));
+         int day = Integer.parseInt(sampleName.substring(dayNdx, sampleName.indexOf("-")));
          //if isolate name is 'f14-1' then extract 1 as the isolateNum
          int isolateNum = Integer.parseInt(sampleName.substring(sampleName.indexOf("-") + 1, sampleName.length()));
          String marker = ", X";
