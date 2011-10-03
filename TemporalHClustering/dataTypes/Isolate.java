@@ -142,9 +142,13 @@ public class Isolate {
       return mIsolateName.equals(otherIsolate.mIsolateName);
    }
 
-   public boolean equals(Isolate otherIsolate) {
-      System.out.println("Checking if " + this.toString() + " is equal to " + otherIsolate);
-      return isSameIsolate(otherIsolate);
+   public boolean equals(Object otherIsolate) {
+      if (otherIsolate instanceof Isolate) {
+         //System.out.println("Checking if " + this.toString() + " is equal to " + otherIsolate);
+         return isSameIsolate((Isolate) otherIsolate);
+      }
+
+      return false;
    }
 
    /*
@@ -182,7 +186,7 @@ public class Isolate {
    */
 
    public int hashCode() {
-      System.out.println("hashcode of " + mIsolateName + ": " + mIsolateName.hashCode());
+      //System.out.println("hashcode of " + mIsolateName + ": " + mIsolateName.hashCode());
       return mIsolateName.hashCode();
    }
 

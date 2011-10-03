@@ -47,6 +47,18 @@ public class IsolateCorrelation {
       return mCorrelation_23_5;
    }
 
+   public boolean has16_23() {
+      return mCorrelation_16_23 != null;
+   }
+
+   public boolean has23_5() {
+      return mCorrelation_23_5 != null;
+   }
+
+   public boolean isCompleteCorrelation() {
+      return has16_23() && has23_5();
+   }
+
    public Double getCorrelation() {
       if (mCorrelation_16_23 != null && mCorrelation_23_5 != null) {
          if (mCorrelation_16_23 < lowerThreshold || mCorrelation_23_5 < lowerThreshold) {
@@ -73,5 +85,24 @@ public class IsolateCorrelation {
 
    public Isolate getIsolateTwo() {
       return mIsolateTwo;
+   }
+
+   public int hashCode() {
+      return mIsolateOne.hashCode() + mIsolateTwo.hashCode();
+   }
+
+   public boolean equals(Object otherCorrelation) {
+      if (otherCorrelation instanceof IsolateCorrelation) {
+         IsolateCorrelation tmpCorr = (IsolateCorrelation) otherCorrelation;
+
+         if (mIsolateOne.equals(tmpCorr.getIsolateOne())) {
+            return mIsolateTwo.equals(tmpCorr.getIsolateTwo());
+         }
+         else if (mIsolateOne.equals(tmpCorr.getIsolateTwo())) {
+            return mIsolateTwo.equals(tmpCorr.getIsolateOne());
+         }
+      }
+
+      return false;
    }
 }

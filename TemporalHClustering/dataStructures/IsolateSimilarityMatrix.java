@@ -114,18 +114,13 @@ public class IsolateSimilarityMatrix {
    */
 
    public boolean hasCorrelation(Isolate isolate_A, Isolate isolate_B) {
-      System.out.println("checking if has correlation...");
       if ((mSimilarityMatrix.containsKey(isolate_A) &&
        mSimilarityMatrix.get(isolate_A).containsKey(isolate_B)) ||
        (mSimilarityMatrix.containsKey(isolate_B) &&
        mSimilarityMatrix.get(isolate_B).containsKey(isolate_A))) {
-         //System.out.println(isolate_A + " and " + isolate_B + " are in the matrix");
-         System.out.println("finished checking if has correlation...");
          return true;
       }
 
-      //System.out.println(isolate_A + " and " + isolate_B + " are not in the matrix");
-      System.out.println("finished checking if has correlation...");
       return false;
    }
 
@@ -141,6 +136,19 @@ public class IsolateSimilarityMatrix {
 
       addIsolate(isolate_A);
       addIsolate(isolate_B);
+   }
+
+   public IsolateCorrelation removeCorrelation(Isolate isolate_A, Isolate isolate_B) {
+      IsolateCorrelation removedCorr = null;
+
+      if (mSimilarityMatrix.containsKey(isolate_A) && mSimilarityMatrix.get(isolate_A).containsKey(isolate_B)) {
+         removedCorr = mSimilarityMatrix.get(isolate_A).remove(isolate_B);
+      }
+      if (mSimilarityMatrix.containsKey(isolate_B) && mSimilarityMatrix.get(isolate_B).containsKey(isolate_A)) {
+         mSimilarityMatrix.get(isolate_B).remove(isolate_A);
+      }
+
+      return removedCorr;
    }
 
    private void addIsolate(Isolate isolate) {

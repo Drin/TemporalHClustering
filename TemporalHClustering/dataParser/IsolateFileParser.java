@@ -69,7 +69,7 @@ public class IsolateFileParser {
    //public Map<Integer, List<Isolate>> extractData(IsolateSimilarityMatrix similarityMatrix) {
    //public Map<Connectivity, IsolateSimilarityMatrix> extractData(Map<String, Map<Integer, List<Isolate>>> dataMap) {
    //public void extractData(Map<String, Map<Integer, List<Isolate>>> dataMap) {
-   public void extractData(Map<Connectivity, IsolateSimilarityMatrix> isolateNetworks) {
+   public void extractData(Map<Connectivity, IsolateSimilarityMatrix> isolateNetworks, IsolateSimilarityMatrix partialCorrelations) {
       Map<Integer, Isolate> isolateIdMap = new HashMap<Integer, Isolate>();
       //Map<Integer, List<Isolate>> dataMap = new LinkedHashMap<Integer, List<Isolate>>();
 
@@ -157,22 +157,21 @@ public class IsolateFileParser {
                IsolateSimilarityMatrix strongMatrix = isolateNetworks.get(Connectivity.STRONG);
                IsolateSimilarityMatrix weakMatrix = isolateNetworks.get(Connectivity.WEAK);
 
+               /*
                if (strongMatrix.hasCorrelation(currentIsolate, otherIsolate)) {
                   isolateCorr = strongMatrix.getCorrelation(currentIsolate, otherIsolate);
                }
                else if (weakMatrix.hasCorrelation(currentIsolate, otherIsolate)) {
                   isolateCorr = weakMatrix.getCorrelation(currentIsolate, otherIsolate);
                }
+               */
+               if (partialCorrelations.hasCorrelation(currentIsolate, otherIsolate)) {
+                  isolateCorr = partialCorrelations.getCorrelation(currentIsolate, otherIsolate);
+               }
                else {
-                  System.out.println("does not have " + currentIsolate + " -> " + otherIsolate);
                   isolateCorr = new IsolateCorrelation(currentIsolate, otherIsolate);
 
-                  if (correlation > mUpperThreshold) {
-                     isolateNetworks.get(Connectivity.STRONG).addCorrelation(isolateCorr);
-                  }
-                  else {
-                     isolateNetworks.get(Connectivity.WEAK).addCorrelation(isolateCorr);
-                  }
+                  partialCorrelations.addCorrelation(isolateCorr);
                }
 
                //MARKER new code
@@ -189,6 +188,22 @@ public class IsolateFileParser {
                   default:
                      System.err.println("Invalid region: " + mRegion);
                      break;
+               }
+
+               if (isolateCorr.isCompleteCorrelation()) {
+                  if (isolateCorr.getCorrelation() != null) {
+                     if (isolateCorr.getCorrelation() > mUpperThreshold) {
+                        isolateNetworks.get(Connectivity.STRONG).addCorrelation(isolateCorr);
+                     }
+                     else {
+                        isolateNetworks.get(Connectivity.WEAK).addCorrelation(isolateCorr);
+                     }
+
+                     partialCorrelations.removeCorrelation(currentIsolate, otherIsolate);
+                  }
+                  else {
+                     System.err.println("Error: invalid correlation");
+                  }
                }
 
                /* MARKER

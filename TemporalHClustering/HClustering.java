@@ -96,6 +96,7 @@ public class HClustering {
       /*
        * Each isolate similarity matrix holds a correlation for both regions
        */
+      IsolateSimilarityMatrix partialCorrelations = new IsolateSimilarityMatrix();
       Map<Connectivity, IsolateSimilarityMatrix> isolateNetworks =
        new HashMap<Connectivity, IsolateSimilarityMatrix>();
 
@@ -122,7 +123,7 @@ public class HClustering {
             //MARKER old code
             //isolateMap = parser.extractData(similarityMatrix);
             //mIsolateNetworks = parser.extractData();
-            parser.extractData(isolateNetworks);
+            parser.extractData(isolateNetworks, partialCorrelations);
          }
 
          System.out.println("strong Network size: " + isolateNetworks.get(Connectivity.STRONG).size());
@@ -182,9 +183,11 @@ public class HClustering {
       technicianIsolateMap = similarityMatrix.getIsolateMap();
 
       for (String technician : technicianIsolateMap.keySet()) {
+         System.out.printf("clustering technician %s's dataset...\n", technician);
          Map<Integer, List<Isolate>> isolateMap = technicianIsolateMap.get(technician);
 
          for (int sampleDay : isolateMap.keySet()) {
+            System.out.printf("clustering day %d...\n", sampleDay);
             //Cluster the list of isolates in this day
             List<ClusterDendogram> currClusters = clusterIsolateList(similarityMatrix,
              isolateMap.get(sampleDay), type);
@@ -209,8 +212,8 @@ public class HClustering {
 
       clusters = clusterGroup(technicianClusters, type);
 
-      //System.out.printf("\n\n================\nFINISHED STAGE 1. CLUSTERING SQUISHIES\n" +
-       //"===================\n\n");
+      System.out.printf("\n\n================\nFINISHED STAGE 1. CLUSTERING SQUISHIES\n" +
+       "===================\n\n");
       
       similarityMatrix = isolateNetworks.get(Connectivity.WEAK);
       technicianIsolateMap = similarityMatrix.getIsolateMap();
@@ -224,16 +227,21 @@ public class HClustering {
       }
 
       for (String technician : technicianIsolateMap.keySet()) {
+         System.out.printf("clustering technician %s's dataset...\n", technician);
          Map<Integer, List<Isolate>> isolateMap = technicianIsolateMap.get(technician);
 
          for (int sampleDay : isolateMap.keySet()) {
+            System.out.printf("clustering day %d...\n", sampleDay);
+
             for (Isolate isolate : isolateMap.get(sampleDay)) {
                //clusters = clusterWeakIsolates(similarityMatrix, clusters, isolate, type);
+
                if (!isolate.hasBeenClustered()) {
                   Cluster newCluster = new Cluster(similarityMatrix, isolate);
                   Dendogram newDendogram = new DendogramLeaf(isolate);
                   clusters.add(new ClusterDendogram(newCluster, newDendogram));
                }
+
             }
          }
       }
@@ -241,6 +249,7 @@ public class HClustering {
       clusters = clusterGroup(clusters, type);
 
 
+      System.out.printf("\n\n==================\nFINISHED STAGE 2.\n======================\n\n");
       return clusters;
    }
 
