@@ -10,6 +10,8 @@ public class IsolateCorrelation {
    private Double mCorrelation_16_23, mCorrelation_23_5;
    private double upperThreshold = 99.7, lowerThreshold = 95;
 
+   private String mAggregationMethod = "average";
+
    public IsolateCorrelation(Isolate isolateA, Isolate isolateB) {
       super();
 
@@ -67,16 +69,22 @@ public class IsolateCorrelation {
          else if (mCorrelation_16_23 > upperThreshold && mCorrelation_23_5 > upperThreshold) {
             return 100.0;
          }
+
          else {
-            return Math.min(mCorrelation_16_23, mCorrelation_23_5);
+            if (mAggregationMethod.equals("minimum")) {
+               return Math.min(mCorrelation_16_23, mCorrelation_23_5);
+            }
+            else if (mAggregationMethod.equals("average")) {
+               System.out.println("average?");
+               return (mCorrelation_16_23 + mCorrelation_23_5) / 2.0;
+            }
          }
       }
 
       else if (mCorrelation_16_23 == null && mCorrelation_23_5 == null)
          return null;
 
-      else 
-         return mCorrelation_16_23 != null ? mCorrelation_16_23 : mCorrelation_23_5;
+      return mCorrelation_16_23 != null ? mCorrelation_16_23 : mCorrelation_23_5;
    }
 
    public Isolate getIsolateOne() {
