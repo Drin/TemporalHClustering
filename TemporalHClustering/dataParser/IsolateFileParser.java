@@ -192,7 +192,9 @@ public class IsolateFileParser {
 
                if (isolateCorr.isCompleteCorrelation()) {
                   if (isolateCorr.getCorrelation() != null) {
-                     if (isolateCorr.getCorrelation() > mUpperThreshold) {
+                     //if (isolateCorr.getCorrelation() > mUpperThreshold) {
+                     if (isolateCorr.getCorrelation() == 100) {
+                        System.out.printf("putting correlation between %s and %s (%.03f) into strong network\n", currentIsolate, otherIsolate, isolateCorr.getCorrelation());
                         isolateNetworks.get(Connectivity.STRONG).addCorrelation(isolateCorr);
                      }
                      else {

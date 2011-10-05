@@ -323,16 +323,13 @@ public class Cluster {
          case AVERAGE:
             double totalDist = 0, totalSize = 0;
 
-            //System.err.println("calculating average...\n");
+            //System.err.println("calculating everage...\n");
 
             for (int dataNdx = 0; dataNdx < this.isolates.size(); dataNdx++) {
                for (int otherNdx = 0; otherNdx < otherCluster.isolates.size(); otherNdx++) {
                   //totalDist += 100 - IsolateSimilarity.findCorrelation(this.isolates.get(dataNdx),
                   double corrVal = similarityMatrix.getCorrelationVal(
                    otherCluster.isolates.get(otherNdx), this.isolates.get(dataNdx));
-
-                  //System.out.printf("correlation between %s and %s: %.03f\n",
-                   //otherCluster.isolates.get(otherNdx), this.isolates.get(dataNdx), corrVal);
 
                   if (corrVal == 0) {
                      corrVal = similarityMatrix.getCorrelationVal(
@@ -341,6 +338,11 @@ public class Cluster {
                      //System.out.printf("*reverse*\ncorrelation between %s and %s: %.03f\n",
                       //this.isolates.get(dataNdx), otherCluster.isolates.get(otherNdx), corrVal);
                   }
+
+                  /*
+                  System.out.printf("correlation between %s and %s: %.03f\n",
+                   otherCluster.isolates.get(otherNdx), this.isolates.get(dataNdx), corrVal);
+                   */
 
                   totalDist += corrVal;
                   totalSize++;
@@ -489,6 +491,29 @@ public class Cluster {
       }
 
       return closestDist;
+   }
+
+   public void recalculateDistanceTo(Cluster otherCluster, distType type, double upperThreshold, double lowerThreshold) {
+      double clustDist = this.corrDistance(otherCluster, type);
+      if (clustDist < lowerThreshold || clustDist > upperThreshold) {
+
+         for (Isolate isolate : isolates) {
+            for (Isolate otherIsolate : otherCluster.isolates) {
+
+               if (similarityMatrix.hasCorrelation(isolate, otherIsolate)) {
+                  similarityMatrix.transformCorrelation(isolate, otherIsolate, upperThreshold, lowerThreshold);
+               }
+               else if (similarityMatrix.hasCorrelation(otherIsolate, isolate)) {
+                  similarityMatrix.transformCorrelation(otherIsolate, isolate, upperThreshold, lowerThreshold);
+               }
+               else {
+                  //System.err.println("recalculating distance for a nonexistent correlation...");
+               }
+
+            }
+         }
+
+      }
    }
 
    /*

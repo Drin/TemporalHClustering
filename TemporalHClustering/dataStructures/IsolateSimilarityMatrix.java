@@ -48,7 +48,28 @@ public class IsolateSimilarityMatrix {
 
    public double getCorrelationVal(Isolate isolateOne, Isolate isolateTwo) {
       IsolateCorrelation correlation = getCorrelation(isolateOne, isolateTwo);
+
+
+      if (correlation != null) {
+         //System.out.printf("correlation between %s and %s: 16-23: %.03f 23-5: %.03f aggregate: %.03f\n",
+          //isolateOne, isolateTwo, correlation.get16_23(), correlation.get23_5(), correlation.getCorrelation());
+      }
+
       return correlation != null ? correlation.getCorrelation() : 0;
+   }
+
+   public void transformCorrelation(Isolate isolateOne, Isolate isolateTwo, double upperThreshold, double lowerThreshold) {
+      IsolateCorrelation correlation = getCorrelation(isolateOne, isolateTwo);
+      if (correlation != null) {
+         if (correlation.getCorrelation() > upperThreshold) {
+            correlation.set16_23(100);
+            correlation.set23_5(100);
+         }
+         else if (correlation.getCorrelation() < lowerThreshold) {
+            correlation.set16_23(0);
+            correlation.set23_5(0);
+         }
+      }
    }
 
    public void setDistanceThreshold(IsolateRegion region, double distThreshold) {

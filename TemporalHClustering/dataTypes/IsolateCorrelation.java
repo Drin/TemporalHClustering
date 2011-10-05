@@ -75,7 +75,7 @@ public class IsolateCorrelation {
                return Math.min(mCorrelation_16_23, mCorrelation_23_5);
             }
             else if (mAggregationMethod.equals("average")) {
-               System.out.println("average?");
+               //System.out.println("average?");
                return (mCorrelation_16_23 + mCorrelation_23_5) / 2.0;
             }
          }

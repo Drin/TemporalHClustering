@@ -253,6 +253,7 @@ public class HClustering {
       return clusters;
    }
 
+   /*
    private List<ClusterDendogram> clusterWeakIsolates(IsolateSimilarityMatrix similarityMatrix,
     List<ClusterDendogram> clusters, Isolate isolate, Cluster.distType type) {
       //System.out.printf("starting weak clustering method...\n");
@@ -302,6 +303,7 @@ public class HClustering {
 
       return clusters;
    }
+   */
 
    private List<ClusterDendogram> clusterIsolateList(IsolateSimilarityMatrix similarityMatrix,
     List<Isolate> isolates, Cluster.distType type) {
@@ -431,6 +433,9 @@ public class HClustering {
          if (newClusters.size() != clusters.size()) {
             hasChanged = true;
             clusters = newClusters;
+            System.out.println("recalculating cluster distances...");
+            recalculateClusterDistances(clusters, type);
+            System.out.println("finished recalculating cluster distances...");
          }
 
          //reset various variables
@@ -444,6 +449,17 @@ public class HClustering {
       //System.out.printf("***Finished clustering group***\n");
 
       return clusters;
+   }
+   public void recalculateClusterDistances(List<ClusterDendogram> clusters, Cluster.distType type) {
+      for (int clustOne = 0; clustOne < clusters.size(); clustOne++) {
+         for (int clustTwo = clustOne + 1; clustTwo < clusters.size(); clustTwo++) {
+            Cluster cluster_A = clusters.get(clustOne).getCluster();
+            Cluster cluster_B = clusters.get(clustTwo).getCluster();
+
+            cluster_A.recalculateDistanceTo(cluster_B, type, mUpperThreshold, mLowerThreshold);
+            cluster_B.recalculateDistanceTo(cluster_A, type, mUpperThreshold, mLowerThreshold);
+         }
+      }
    }
 
    /*
@@ -538,7 +554,7 @@ public class HClustering {
             Cluster clusterOne = clusters.get((int) minNdx.getX()).getCluster();
             Cluster clusterTwo = clusters.get((int) minNdx.getY()).getCluster();
 
-            //System.out.printf("combining clusters:\n\n%s\n\n%s\n", clusterOne, clusterTwo);
+            System.out.printf("combining clusters:\n===\n\n%s\n and \n%s\n\n===", clusterOne, clusterTwo);
 
             Cluster combinedCluster = new Cluster(clusterOne.unionWith(clusterTwo));
 
