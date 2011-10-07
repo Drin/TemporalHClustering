@@ -19,27 +19,33 @@ import java.util.ArrayList;
 public class IsolateOutputWriter {
 
    public static void outputTemporalCharts(List<ClusterDendogram> clustDends, String filePrefix) {
-      String outFileName = filePrefix + "_temporalCharts.js";
+      List<String> graphContainers = new ArrayList<String>();
+      List<String> graphCharts = new ArrayList<String>();
+      String outFileName = filePrefix + "_temporalCharts.html";
       String chartFormat = "";
+      
+      String fecalSeries = "", immSeries = "", laterSeries = "", deepSeries = "";
 
       int numCluster = -1;
       for (ClusterDendogram clustDend : clustDends) {
          Cluster tmpClust = clustDend.getCluster();
-         numCluster++;
+         graphContainers.add(String.format("<div id='cluster%d' class='highcharts-container'></div>", numCluster));
 
-         String fecalSeries = tmpClust.getFecalSeries();
-         String immSeries = tmpClust.getImmSeries();
-         String laterSeries = tmpClust.getLaterSeries();
-         String deepSeries = tmpClust.getDeepSeries();
+         fecalSeries = tmpClust.getFecalSeries();
+         immSeries = tmpClust.getImmSeries();
+         laterSeries = tmpClust.getLaterSeries();
+         deepSeries = tmpClust.getDeepSeries();
 
-         chartFormat += generateChart(numCluster, fecalSeries, immSeries, laterSeries, deepSeries);
+         graphCharts.add(newGraphChart(String.format("cluster%d", numCluster++), fecalSeries, immSeries, laterSeries, deepSeries));
       }
+
+      String htmlStr = buildChartHtml(graphContainers, buildChartJs(graphCharts));
 
       try {
          File outputFile = new File(outFileName);
          BufferedWriter fileWriter = new BufferedWriter(new FileWriter(outputFile));
 
-         fileWriter.write(chartFormat);
+         fileWriter.write(htmlStr);
          fileWriter.close();
       }
       catch(Exception e1) {
@@ -47,6 +53,109 @@ public class IsolateOutputWriter {
          e1.printStackTrace();
          System.exit(1);
       }
+   }
+
+   private static String buildChartHtml(List<String> graphContainers, String graphCharts) {
+      String htmlStr = String.format(
+       "<!DOCTYPE html>\n" +
+       "<html>\n" +
+       "\t<head>\n" +
+       "\t\t<title> temporalClusters </title>\n" +
+       "\t\t<script type=\"text/javascript\" src=\"http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js\"></script>\n" +
+       "\t\t<script type=\"text/javascript\" src=\"http://users.csc.calpoly.edu/~amontana/TemporalHClustering/js/highcharts.js\"></script>\n" +
+       "\t\t<script type=\"text/javascript\">\n%s</script>\n" +
+       "\t\t<link rel=\"stylesheet\" type=\"text/css\" href=\"css/clusters.css\"/>\n" +
+       "\t</head>\n" +
+       "\t<body>\n", graphCharts);
+
+      for (String graphContainer : graphContainers) {
+         htmlStr += "\t\t" + graphContainer + "\n";
+      }
+
+      return htmlStr + "\t</body>\n</html>\n";
+   }
+   
+   private static String buildChartJs(List<String> graphCharts) {
+      String javascriptStr = "$(document).ready(function(){\n";
+
+      for (String graphChart : graphCharts) {
+         javascriptStr += graphChart + "\n";
+      }
+
+      return javascriptStr + "});";
+   }
+
+   private static String newGraphChart(String clusterName, String fecalSeries, String immSeries, String laterSeries, String deepSeries) {
+      return String.format(
+         "%s = new Highcharts.Chart({\n" +
+            "chart: {\n" +
+               "renderTo: '%s',\n" +
+               "defaultSeriesType: 'column'\n" +
+            "},\n" +
+            "title: {\n" +
+               "text: '%s'\n" +
+            "},\n" +
+            "xAxis: {\n" +
+               "categories: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6',\n" +
+               "'Day 7', 'Day 8', 'Day 9', 'Day 10', 'Day 11', 'Day 12', 'Day 13',\n" +
+               "'Day 14']\n" +
+            "},\n" +
+            "yAxis: {\n" +
+               "min: 0,\n" +
+               "title: {\n" +
+                  "text: 'Number of pyrograms in cluster'\n" +
+               "},\n" +
+               "stackLabels: {\n" +
+                  "enabled: true,\n" +
+                  "style: {\n" +
+                     "fontWeight: 'bold',\n" +
+                     "color: (Highcharts.theme && Highcharts.theme.legendBackgroundColorSolid) || 'gray'\n" +
+                  "}\n" +
+               "},\n" +
+               "tickInterval: 2\n" +
+            "},\n" +
+            "legend: {\n" +
+               "align: 'right',\n" +
+               "x: -100,\n" +
+               "verticalAlign: 'top',\n" +
+               "y: 20,\n" +
+               "floating: true,\n" +
+               "backgroundColor: (Highcharts.theme && Highcharts.theme.legendBackgroundColorSolid) || 'white',\n" +
+               "borderColor: '#CCC',\n" +
+               "borderWidth: 1,\n" +
+               "shadow: false\n" +
+            "},\n" +
+            "tooltip: {\n" +
+               "formatter: function() {\n" +
+                  "return '<b>' + this.x + '</b><br />' +\n" +
+                         "this.series.name + ': ' + this.y + '<br />' +\n" +
+                         "'Total: ' + this.point.stackTotal;\n" +
+               "}\n" +
+            "},\n" +
+            "plotOptions: {\n" +
+               "column: {\n" +
+                  "stacking: 'normal',\n" +
+                  "dataLabels: {\n" +
+                     "enabled: true,\n" +
+                     "color: (Highcharts.theme && Highcharts.theme.legendBackgroundColorSolid) || 'white'\n" +
+                  "}\n" +
+               "}\n" +
+            "},\n" +
+            "series: [{\n" +
+               "name: 'Fecal',\n" +
+               "data: [%s]\n" +
+            "}, {\n" +
+               "name: 'Immediate',\n" +
+               "data: [%s]\n" +
+            "}, {\n" +
+               "name: 'Later',\n" +
+               "data: [%s]\n" +
+            "}]\n" +
+            "}, {\n" +
+               "name: 'Deep',\n" +
+               "data: [%s]\n" +
+            "}, {\n" +
+         "});", clusterName, clusterName, clusterName, fecalSeries, immSeries, laterSeries, deepSeries);
    }
 
    public static void outputTemporalClusters(List<ClusterDendogram> clustDends, String filePrefix) {
@@ -197,11 +306,5 @@ public class IsolateOutputWriter {
          e1.printStackTrace();
          System.exit(1);
       }
-   }
-
-   private static String generateChart(int clustNum, String fecalSeries,
-    String immSeries, String laterSeries, String deepSeries) {
-      return String.format("cluster%d:\n'Fecal' %s\n'Immediate' %s\n'Later' %s\n'Deep' %s\n",
-       clustNum, fecalSeries, immSeries, laterSeries, deepSeries);
    }
 }
