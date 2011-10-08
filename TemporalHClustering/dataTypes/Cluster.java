@@ -624,7 +624,7 @@ public class Cluster {
 
    public void getSeriesCounts() {
       String tempOutput = "";
-      int numDays = 14;
+      int numDays = 6;
       int technicianNdx = 0, groupNdx = 1, dayNdx = 2;
 
 

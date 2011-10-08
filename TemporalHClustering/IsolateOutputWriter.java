@@ -26,7 +26,7 @@ public class IsolateOutputWriter {
       
       String fecalSeries = "", immSeries = "", laterSeries = "", deepSeries = "";
 
-      int numCluster = -1;
+      int numCluster = 0;
       for (ClusterDendogram clustDend : clustDends) {
          Cluster tmpClust = clustDend.getCluster();
          graphContainers.add(String.format("<div id='cluster%d' class='highcharts-container'></div>", numCluster));
@@ -56,17 +56,17 @@ public class IsolateOutputWriter {
    }
 
    private static String buildChartHtml(List<String> graphContainers, String graphCharts) {
-      String htmlStr = String.format(
+      String htmlStr =
        "<!DOCTYPE html>\n" +
        "<html>\n" +
        "\t<head>\n" +
        "\t\t<title> temporalClusters </title>\n" +
        "\t\t<script type=\"text/javascript\" src=\"http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js\"></script>\n" +
        "\t\t<script type=\"text/javascript\" src=\"http://users.csc.calpoly.edu/~amontana/TemporalHClustering/js/highcharts.js\"></script>\n" +
-       "\t\t<script type=\"text/javascript\">\n%s</script>\n" +
+       "\t\t<script type=\"text/javascript\">\n" + graphCharts + "</script>\n" +
        "\t\t<link rel=\"stylesheet\" type=\"text/css\" href=\"css/clusters.css\"/>\n" +
        "\t</head>\n" +
-       "\t<body>\n", graphCharts);
+       "\t<body>\n";
 
       for (String graphContainer : graphContainers) {
          htmlStr += "\t\t" + graphContainer + "\n";
@@ -87,7 +87,7 @@ public class IsolateOutputWriter {
 
    private static String newGraphChart(String clusterName, String fecalSeries, String immSeries, String laterSeries, String deepSeries) {
       return String.format(
-         "%s = new Highcharts.Chart({\n" +
+         "var %s = new Highcharts.Chart({\n" +
             "chart: {\n" +
                "renderTo: '%s',\n" +
                "defaultSeriesType: 'column'\n" +
@@ -150,11 +150,10 @@ public class IsolateOutputWriter {
             "}, {\n" +
                "name: 'Later',\n" +
                "data: [%s]\n" +
-            "}]\n" +
             "}, {\n" +
                "name: 'Deep',\n" +
                "data: [%s]\n" +
-            "}, {\n" +
+            "}]\n" +
          "});", clusterName, clusterName, clusterName, fecalSeries, immSeries, laterSeries, deepSeries);
    }
 
