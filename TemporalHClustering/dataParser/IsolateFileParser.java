@@ -20,7 +20,7 @@ public class IsolateFileParser {
    private boolean mTransform = true;
    private File mFile = null;
    private FileSettings mSettings = null;
-   private double mDistThreshold, mLowerThreshold, mUpperThreshold;
+   private double mLowerThreshold, mUpperThreshold;
    private IsolateRegion mRegion;
 
    public IsolateFileParser(File parseFile, FileSettings settings) {
@@ -28,7 +28,6 @@ public class IsolateFileParser {
       mSettings = settings;
 
       mRegion = settings.getRegion();
-      mDistThreshold = settings.getDistanceThreshold();
       mLowerThreshold = settings.getLowerThreshold();
       mUpperThreshold = settings.getUpperThreshold();
    }
@@ -177,12 +176,13 @@ public class IsolateFileParser {
                //MARKER new code
                //IsolateSimilarityMatrix similarityMatrix = null;
 
-
                switch (mRegion) {
                   case ITS_16_23:
+                     isolateCorr.setThresholds_16_23(mLowerThreshold, mUpperThreshold);
                      isolateCorr.set16_23(correlation);
                      break;
                   case ITS_23_5:
+                     isolateCorr.setThresholds_23_5(mLowerThreshold, mUpperThreshold);
                      isolateCorr.set23_5(correlation);
                      break;
                   default:

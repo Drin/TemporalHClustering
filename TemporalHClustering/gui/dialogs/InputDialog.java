@@ -10,6 +10,7 @@ import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.FlowLayout;
 
 import java.util.Map;
 import java.util.HashMap;
@@ -31,17 +32,19 @@ import javax.swing.JPanel;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
+import javax.swing.JSeparator;
 import javax.swing.BoxLayout;
 
 public class InputDialog extends JDialog {
-   private final int DIALOG_HEIGHT = 325, DIALOG_WIDTH = 475;
+   private final int DIALOG_HEIGHT = 365, DIALOG_WIDTH = 415;
    private String recentlyAccessedDir = "", mArgDelim = null;
    private Container mPane = null, mOwner = null;
    private Map<File, String> dataFileMap;
 
    private ButtonGroup firstDataRegion, secondDataRegion;
-   private JTextField firstDataFile, secondDataFile;
-   private JTextField firstDataThreshold, secondDataThreshold, globalThreshold;
+   private JTextField firstDataFile, secondDataFile, outputDataFile;
+   private JTextField firstDataUpperThreshold, secondDataUpperThreshold;
+   private JTextField firstDataLowerThreshold, secondDataLowerThreshold;
 
    public InputDialog() {
       super();
@@ -49,6 +52,7 @@ public class InputDialog extends JDialog {
 
       this.setSize(DIALOG_WIDTH, DIALOG_HEIGHT);
       this.setResizable(false);
+      this.setLocationRelativeTo(null);
 
       mPane = this.getContentPane();
       mPane.setLayout(new BoxLayout(mPane, BoxLayout.Y_AXIS));
@@ -62,10 +66,13 @@ public class InputDialog extends JDialog {
 
       firstDataFile = new JTextField(20);
       secondDataFile = new JTextField(20);
+      outputDataFile = new JTextField(20);
 
-      firstDataThreshold = new JTextField("99.7", 20);
-      secondDataThreshold = new JTextField("99.7", 20);
-      globalThreshold = new JTextField("99.7", 20);
+      firstDataUpperThreshold = new JTextField("99.7", 20);
+      firstDataLowerThreshold = new JTextField("95.0", 20);
+
+      secondDataUpperThreshold = new JTextField("99.7", 20);
+      secondDataLowerThreshold = new JTextField("95.0", 20);
    }
 
    public InputDialog(Frame owner, String title) {
@@ -74,6 +81,7 @@ public class InputDialog extends JDialog {
 
       this.setSize(DIALOG_WIDTH, DIALOG_HEIGHT);
       this.setResizable(false);
+      this.setLocationRelativeTo(null);
 
       mOwner = owner;
 
@@ -89,10 +97,13 @@ public class InputDialog extends JDialog {
 
       firstDataFile = new JTextField(20);
       secondDataFile = new JTextField(20);
+      outputDataFile = new JTextField(20);
 
-      firstDataThreshold = new JTextField("99.7", 20);
-      secondDataThreshold = new JTextField("99.7", 20);
-      globalThreshold = new JTextField("99.7", 20);
+      firstDataUpperThreshold = new JTextField("99.7", 20);
+      firstDataLowerThreshold = new JTextField("95.0", 20);
+
+      secondDataUpperThreshold = new JTextField("99.7", 20);
+      secondDataLowerThreshold = new JTextField("95.0", 20);
    }
 
    public static void main(String[] args) {
@@ -103,32 +114,63 @@ public class InputDialog extends JDialog {
    }
 
    public void init() {
-      mPane.add(newGlobalThreshold(globalThreshold));
+      JPanel labelField = new JPanel(), labelField2 = new JPanel();
 
-      mPane.add(new JLabel("Input Dataset"));
-      mPane.add(newFileField(firstDataRegion, firstDataFile, firstDataThreshold));
+      labelField.setLayout(new FlowLayout(FlowLayout.LEADING));
+      labelField.add(new JLabel("Input Dataset"));
 
-      mPane.add(new JLabel("Input Dataset"));
-      mPane.add(newFileField(secondDataRegion, secondDataFile, secondDataThreshold));
+      labelField2.setLayout(new FlowLayout(FlowLayout.LEADING));
+      labelField2.add(new JLabel("Input Dataset"));
+
+      //mPane.add(newGlobalThreshold(globalThreshold));
+      
+      mPane.add(newOutputNameField(outputDataFile));
+
+      mPane.add(labelField);
+      mPane.add(new JSeparator());
+      mPane.add(newFileField(firstDataRegion, firstDataFile, firstDataUpperThreshold, firstDataLowerThreshold, outputDataFile));
+
+      mPane.add(labelField2);
+      mPane.add(new JSeparator());
+      mPane.add(newFileField(secondDataRegion, secondDataFile, secondDataUpperThreshold, secondDataLowerThreshold, outputDataFile));
 
       mPane.add(controls());
 
       mPane.validate();
    }
 
+   /*
    public JPanel newGlobalThreshold(JTextField thresholdText) {
       JPanel thresholdField = new JPanel();
 
-      thresholdField.setLayout(new BoxLayout(thresholdField, BoxLayout.X_AXIS));
+      //thresholdField.setLayout(new BoxLayout(thresholdField, BoxLayout.X_AXIS));
+      thresholdField.setLayout(new FlowLayout(FlowLayout.LEADING));
+      thresholdField.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
 
-      thresholdField.add(new JLabel("Clustering Threshold"));
+      thresholdField.add(new JLabel("Clustering Threshold:"));
       thresholdField.add(thresholdText);
       thresholdField.setAlignmentX(Component.CENTER_ALIGNMENT);
 
       return thresholdField;
    }
+   */
 
-   public JPanel newFileField(ButtonGroup regionSelection, JTextField fileNameField, JTextField thresholdField) {
+   public JPanel newOutputNameField(JTextField outputDataFileField) {
+      JPanel outputNameField = new JPanel();
+
+      //outputNameField.setLayout(new BoxLayout(outputNameField, BoxLayout.X_AXIS));
+      outputNameField.setLayout(new FlowLayout(FlowLayout.LEADING));
+      outputNameField.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
+
+      outputNameField.add(new JLabel("Output file name:"));
+      outputNameField.add(outputDataFileField);
+      outputNameField.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+      return outputNameField;
+   }
+
+   public JPanel newFileField(ButtonGroup regionSelection, JTextField fileNameField,
+    JTextField upperThresholdField, JTextField lowerThresholdField, JTextField outputField) {
       JPanel radioSelection = new JPanel();
       JPanel fileInput = new JPanel();
       JPanel fileInputPanel = new JPanel();
@@ -148,7 +190,8 @@ public class InputDialog extends JDialog {
       fileInput.add(new JLabel("File:"));
       fileInput.add(fileNameField);
       fileInput.add(new JLabel("Threshold:"));
-      fileInput.add(thresholdField);
+      fileInput.add(upperThresholdField);
+      fileInput.add(lowerThresholdField);
 
       fileInput.setAlignmentY(Component.CENTER_ALIGNMENT);
 
@@ -157,7 +200,7 @@ public class InputDialog extends JDialog {
 
       fileInputPanel.add(radioSelection);
       fileInputPanel.add(fileInput);
-      fileInputPanel.add(newFileBrowseButton(fileNameField));
+      fileInputPanel.add(newFileBrowseButton(fileNameField, outputField));
 
       fileInputPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
@@ -176,8 +219,8 @@ public class InputDialog extends JDialog {
       return radioSelection;
    }
 
-   public JButton newFileBrowseButton(JTextField fileName) {
-      final JTextField tmpFileField = fileName;
+   public JButton newFileBrowseButton(JTextField fileName, JTextField outputFileName) {
+      final JTextField tmpFileField = fileName, tmpOutputFile = outputFileName;
       JButton fileBrowse = new JButton("Browse");
 
       fileBrowse.addActionListener(new ActionListener() {
@@ -197,7 +240,12 @@ public class InputDialog extends JDialog {
                System.out.println("cancelled");
             }
             else if (returnVal == JFileChooser.APPROVE_OPTION) {
-               tmpFileField.setText(chooser.getSelectedFile().getAbsolutePath());
+               File dataFile = chooser.getSelectedFile();
+               tmpFileField.setText(dataFile.getAbsolutePath());
+               if (tmpOutputFile.getText().equals("")) {
+                  tmpOutputFile.setText(dataFile.getName().substring(0, dataFile.getName().indexOf(".csv")));
+               }
+
                recentlyAccessedDir = chooser.getSelectedFile().getPath();
             }
             else {
@@ -244,9 +292,13 @@ public class InputDialog extends JDialog {
             ArrayList<String> args = new ArrayList<String>();
 
             try {
-               HClustering.setDistanceThreshold(Double.parseDouble(globalThreshold.getText()));
-               double firstThreshold = Double.parseDouble(firstDataThreshold.getText());
-               double secondThreshold = Double.parseDouble(secondDataThreshold.getText());
+               //HClustering.setDistanceThreshold(Double.parseDouble(globalThreshold.getText()));
+               HClustering.setOutputFileName(outputDataFile.getText());
+               double firstUpperThreshold = Double.parseDouble(firstDataUpperThreshold.getText());
+               double firstLowerThreshold = Double.parseDouble(firstDataLowerThreshold.getText());
+
+               double secondUpperThreshold = Double.parseDouble(secondDataUpperThreshold.getText());
+               double secondLowerThreshold = Double.parseDouble(secondDataLowerThreshold.getText());
                
                JRadioButton firstRegion = null, secondRegion = null;
                Enumeration regionSelection = firstDataRegion.getElements();
@@ -289,7 +341,7 @@ public class InputDialog extends JDialog {
                   }
                }
                
-               if (firstThreshold < 1 || secondThreshold < 1) {
+               if (firstUpperThreshold < 1 || secondUpperThreshold < 1) {
                   JOptionPane.showMessageDialog(mOwner,
                    "Invalid threshold values",
                    "Invalid Options", JOptionPane.ERROR_MESSAGE);
@@ -297,8 +349,8 @@ public class InputDialog extends JDialog {
                }
 
                if (!firstDataFile.getText().equals("") && firstRegion != null) {
-                  args.add(String.format("%s%s%s%s%.03f", firstDataFile.getText(),
-                   mArgDelim, firstRegion.getText(), mArgDelim, firstThreshold));
+                  args.add(String.format(firstDataFile.getText() + mArgDelim + firstRegion.getText() +
+                   mArgDelim + "%.03f" + mArgDelim + "%.03f", firstLowerThreshold, firstUpperThreshold));
                }
                else if (!firstDataFile.getText().equals("") || firstRegion != null) {
                   JOptionPane.showMessageDialog(mOwner,
@@ -309,8 +361,8 @@ public class InputDialog extends JDialog {
                }
 
                if (!secondDataFile.getText().equals("") && secondRegion != null) {
-                  args.add(String.format("%s%s%s%s%.03f", secondDataFile.getText(),
-                   mArgDelim, secondRegion.getText(), mArgDelim, secondThreshold));
+                  args.add(String.format(secondDataFile.getText() + mArgDelim + secondRegion.getText() +
+                   mArgDelim + "%.03f" + mArgDelim + "%.03f", secondLowerThreshold, secondUpperThreshold));
                }
                else if (!secondDataFile.getText().equals("") || secondRegion != null) {
                   JOptionPane.showMessageDialog(mOwner,

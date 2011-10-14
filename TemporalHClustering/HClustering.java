@@ -51,27 +51,25 @@ import java.awt.Point;
 public class HClustering {
    private Cluster.distType mClusterDistType;
    private IsolateRegion mRegion;
-   private double mLowerThreshold, mUpperThreshold;
    private File mDataFile = null;
    private Map<File, FileSettings> dataFileMap;
-   //MARKER
-   //private IsolateSimilarityMatrix similarityMatrix;
    private Map<Connectivity, IsolateSimilarityMatrix> mIsolateNetworks;
-   //private double mThresholding = 6.5;
-   //private double mThresholding = 99.7;
 
-   private static double defaultThreshold = 99.77;
+   private double mLowerThreshold, mUpperThreshold;
    private double mThresholding = -1;
    private int mNumRegions;
 
+   private String mClusterPreference = "similarity";
+
    private static final String ARG_SEPARATOR = "&";
+   private static double defaultThreshold = 99.7;
+   private static String mOutputFileName = "";
 
    public HClustering(int numRegions) {
       super();
 
       mNumRegions = numRegions;
       mThresholding = defaultThreshold; //(defaultThreshold * mNumRegions);
-
 
       mLowerThreshold = 95;
       mUpperThreshold = 99.7;
@@ -105,7 +103,7 @@ public class HClustering {
 
       Cluster.distType type = null;
       String dataFileName = null;
-      double distanceThreshold = -1, lowerThreshold = -1, upperThreshold = -1;
+      double lowerThreshold = -1, upperThreshold = -1;
 
       for (File dataFile : dataFileMap.keySet()) {
          FileSettings settings = dataFileMap.get(dataFile);
@@ -113,7 +111,6 @@ public class HClustering {
          dataFileName = dataFile.getName();
          IsolateRegion region = settings.getRegion();
          type = settings.getDistanceType();
-         distanceThreshold = settings.getDistanceThreshold();
          lowerThreshold = settings.getLowerThreshold();
          upperThreshold = settings.getUpperThreshold();
 
@@ -144,8 +141,11 @@ public class HClustering {
        dataFile.getName().substring(0,
        dataFile.getName().indexOf(".csv")));
       */
-      String outputFileName = String.format("%s/%s", outputFileDir,
-       dataFileName.substring(0, dataFileName.indexOf(".csv")));
+
+      String origFileName = HClustering.mOutputFileName.equals("") ?
+       dataFileName.substring(0, dataFileName.indexOf(".csv")) : HClustering.mOutputFileName;
+      System.out.println("Writing to file " + origFileName + " even though outputFilename should be " + HClustering.mOutputFileName);
+      String outputFileName = String.format("%s/%s", outputFileDir, origFileName);
 
       IsolateOutputWriter.outputClusters(clustDends, outputFileDir, outputFileName + ".xml");
       IsolateOutputWriter.outputCytoscapeFormat(clustDends, outputFileName);
@@ -415,10 +415,20 @@ public class HClustering {
                //if (clustDist > minDist && clustDist > mThresholding ) {
                //System.out.printf("is %.03f > %.03f? %s\n\n", clustDist, maxSimilarity, (clustDist > maxSimilarity));
                //System.out.printf("mThreshold = %.03f\n", mThresholding);
-               if (clustDist > maxSimilarity && clustDist > mThresholding) {
-                  maxSimilarity = clustDist;
-                  //System.out.printf("maxSimilarity: %.03f\n", maxSimilarity);
-                  closeClusters = new Point(clustOne, clustTwo);
+               //if (clustDist > maxSimilarity && clustDist > mThresholding) {
+               if (mClusterPreference.equals("structure")) {
+                  if (clustDist > maxSimilarity && !cluster_A.isDifferent(cluster_B)) {
+                     maxSimilarity = clustDist;
+                     //System.out.printf("maxSimilarity: %.03f\n", maxSimilarity);
+                     closeClusters = new Point(clustOne, clustTwo);
+                  }
+               }
+               else if (mClusterPreference.equals("similarity")) {
+                  if (clustDist > maxSimilarity && cluster_A.isSimilar(cluster_B)) {
+                     maxSimilarity = clustDist;
+                     //System.out.printf("maxSimilarity: %.03f\n", maxSimilarity);
+                     closeClusters = new Point(clustOne, clustTwo);
+                  }
                }
             }
          }
@@ -554,7 +564,7 @@ public class HClustering {
             Cluster clusterOne = clusters.get((int) minNdx.getX()).getCluster();
             Cluster clusterTwo = clusters.get((int) minNdx.getY()).getCluster();
 
-            System.out.printf("combining clusters:\n===\n\n%s\n and \n%s\n\n===", clusterOne, clusterTwo);
+            System.out.printf("combining clusters:\n===\n\n%s\n and \n%s\nwith maxSimiliarty: %.03f\n\n===", clusterOne, clusterTwo, correlation);
 
             Cluster combinedCluster = new Cluster(clusterOne.unionWith(clusterTwo));
 
@@ -608,10 +618,20 @@ public class HClustering {
             System.out.printf("mThreshold = %.03f\n", mThresholding);
             */
 
-            if (clustDist > maxSimilarity && clustDist > mThresholding) {
-               maxSimilarity = clustDist;
-               //System.out.printf("maxSimilarity: %.03f\n", maxSimilarity);
-               closeClusterNdx = clustNdx;
+            //if (clustDist > maxSimilarity && clustDist > mThresholding) {
+            if (mClusterPreference.equals("structure")) {
+               if (clustDist > maxSimilarity && !newCluster.isDifferent(currClust)) {
+                  maxSimilarity = clustDist;
+                  //System.out.printf("maxSimilarity: %.03f\n", maxSimilarity);
+                  closeClusterNdx = clustNdx;
+               }
+            }
+            else if (mClusterPreference.equals("similarity")) {
+               if (clustDist > maxSimilarity && newCluster.isSimilar(currClust)) {
+                  maxSimilarity = clustDist;
+                  //System.out.printf("maxSimilarity: %.03f\n", maxSimilarity);
+                  closeClusterNdx = clustNdx;
+               }
             }
          }
 
@@ -657,7 +677,6 @@ public class HClustering {
              * subArg indices:
              *    0 - filename
              *    1 - region
-             *    2 - region distance threshold
              *    3 - lowerthreshold
              *    4 - upperthreshold
              *    5 - distanceType
@@ -666,13 +685,11 @@ public class HClustering {
             dataFile = new File(subArgs[0]);
             currFileSettings.setRegion(IsolateRegion.getRegion(subArgs[1]));
 
-            currFileSettings.setDistanceThreshold(Double.parseDouble(subArgs[2]));
+            currFileSettings.setLowerThreshold(subArgs.length >= 3 ?
+             Double.parseDouble(subArgs[2]) : mLowerThreshold);
 
-            currFileSettings.setLowerThreshold(subArgs.length >= 4 ?
-             Double.parseDouble(subArgs[3]) : mLowerThreshold);
-
-            currFileSettings.setUpperThreshold(subArgs.length >= 5 ?
-             Double.parseDouble(subArgs[4]) : mUpperThreshold);
+            currFileSettings.setUpperThreshold(subArgs.length >= 4 ?
+             Double.parseDouble(subArgs[3]) : mUpperThreshold);
 
             //use reflection for distance measure
             /*
@@ -681,14 +698,14 @@ public class HClustering {
              new EuclideanDistanceMeasure();
              */
 
-            currFileSettings.setDistanceType(subArgs.length >= 6 ?
-             Cluster.distType.valueOf(subArgs[5].toUpperCase()) : Cluster.distType.AVERAGE);
+            currFileSettings.setDistanceType(subArgs.length >= 5 ?
+             Cluster.distType.valueOf(subArgs[4].toUpperCase()) : Cluster.distType.AVERAGE);
 
             dataFileMap.put(dataFile, currFileSettings);
          }
       }
       catch (NumberFormatException formatErr) {
-         System.out.printf("Invalid threshold values: %d or %d or %d\n", args[2], args[3], args[4]);
+         System.out.printf("Invalid threshold values: %d or %d\n", args[2], args[3]);
          System.exit(1);
       }
 
@@ -701,6 +718,11 @@ public class HClustering {
 
    public static void setDistanceThreshold(double distThreshold) {
       defaultThreshold = distThreshold;
+   }
+
+   public static void setOutputFileName(String fileName) {
+      System.out.println("===============\nSetting File name to " + fileName + "\n===============");
+      mOutputFileName = fileName;
    }
 
 }

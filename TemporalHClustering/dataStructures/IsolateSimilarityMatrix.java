@@ -16,7 +16,8 @@ public class IsolateSimilarityMatrix {
    private Map<String, Map<Integer, List<Isolate>>> mIsolateMapping = null;
 
    private final double INVALID_MAPPING = -2;
-   private double distThreshold_16_23 = -1, distThreshold_23_5 = -1;
+   private double distThreshold_16_23_upper = -1, distThreshold_23_5_upper = -1;
+   private double distThreshold_16_23_lower = -1, distThreshold_23_5_lower = -1;
 
    public IsolateSimilarityMatrix() {
       super();
@@ -50,10 +51,12 @@ public class IsolateSimilarityMatrix {
       IsolateCorrelation correlation = getCorrelation(isolateOne, isolateTwo);
 
 
+      /*
       if (correlation != null) {
-         //System.out.printf("correlation between %s and %s: 16-23: %.03f 23-5: %.03f aggregate: %.03f\n",
-          //isolateOne, isolateTwo, correlation.get16_23(), correlation.get23_5(), correlation.getCorrelation());
+         System.out.printf("correlation between %s and %s: 16-23: %.03f 23-5: %.03f aggregate: %.03f\n",
+          isolateOne, isolateTwo, correlation.get16_23(), correlation.get23_5(), correlation.getCorrelation());
       }
+      */
 
       return correlation != null ? correlation.getCorrelation() : 0;
    }
@@ -72,18 +75,60 @@ public class IsolateSimilarityMatrix {
       }
    }
 
-   public void setDistanceThreshold(IsolateRegion region, double distThreshold) {
+   public void setUpperDistanceThreshold(IsolateRegion region, double distThreshold) {
       switch (region) {
          case ITS_16_23:
-            distThreshold_16_23 = distThreshold;
+            distThreshold_16_23_upper = distThreshold;
             break;
          case ITS_23_5:
-            distThreshold_23_5 = distThreshold;
+            distThreshold_23_5_upper = distThreshold;
             break;
          default:
             System.err.println("Invalid region: " + region);
             break;
       }
+   }
+
+   public void setLowerDistanceThreshold(IsolateRegion region, double distThreshold) {
+      switch (region) {
+         case ITS_16_23:
+            distThreshold_16_23_lower = distThreshold;
+            break;
+         case ITS_23_5:
+            distThreshold_23_5_lower = distThreshold;
+            break;
+         default:
+            System.err.println("Invalid region: " + region);
+            break;
+      }
+   }
+
+   public double getUpperDistanceThreshold(IsolateRegion region) {
+      switch (region) {
+         case ITS_16_23:
+            return distThreshold_16_23_upper;
+         case ITS_23_5:
+            return distThreshold_23_5_upper;
+         default:
+            System.err.println("Invalid region: " + region);
+            break;
+      }
+
+      return -1;
+   }
+
+   public double getLowerDistanceThreshold(IsolateRegion region) {
+      switch (region) {
+         case ITS_16_23:
+            return distThreshold_16_23_lower;
+         case ITS_23_5:
+            return distThreshold_23_5_lower;
+         default:
+            System.err.println("Invalid region: " + region);
+            break;
+      }
+
+      return -1;
    }
 
    /*

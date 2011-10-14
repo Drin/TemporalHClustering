@@ -2,6 +2,7 @@ package TemporalHClustering.dataTypes;
 
 import TemporalHClustering.dataTypes.Isolate;
 import TemporalHClustering.dataTypes.SampleMethod;
+import TemporalHClustering.dataTypes.IsolateRegion;
 
 import TemporalHClustering.dataStructures.IsolateSimilarityMatrix;
 
@@ -274,6 +275,51 @@ public class Cluster {
       }
 
       return closestDist;
+   }
+
+   public boolean isSimilar(Cluster otherCluster) {
+      for (int dataNdx = 0; dataNdx < this.isolates.size(); dataNdx++) {
+         for (int otherNdx = 0; otherNdx < otherCluster.isolates.size(); otherNdx++) {
+            IsolateCorrelation isolateCorr = similarityMatrix.getCorrelation(
+             this.isolates.get(dataNdx), otherCluster.isolates.get(otherNdx));
+
+            try {
+               if (isolateCorr.get16_23() <= similarityMatrix.getUpperDistanceThreshold(IsolateRegion.ITS_16_23) ||
+                isolateCorr.get23_5() <= similarityMatrix.getUpperDistanceThreshold(IsolateRegion.ITS_23_5)) {
+                  return false;
+               }
+            }
+            catch (NullPointerException nullErr) {
+               //System.out.println("checking similarity of null correlation");
+               //nullErr.printStackTrace();
+               return false;
+            }
+         }
+      }
+
+      return true;
+   }
+
+   public boolean isDifferent(Cluster otherCluster) {
+      for (int dataNdx = 0; dataNdx < this.isolates.size(); dataNdx++) {
+         for (int otherNdx = 0; otherNdx < otherCluster.isolates.size(); otherNdx++) {
+            IsolateCorrelation isolateCorr = similarityMatrix.getCorrelation(
+             this.isolates.get(dataNdx), otherCluster.isolates.get(otherNdx));
+
+            try {
+               if (isolateCorr.get16_23() <= similarityMatrix.getLowerDistanceThreshold(IsolateRegion.ITS_16_23) ||
+                isolateCorr.get23_5() <= similarityMatrix.getLowerDistanceThreshold(IsolateRegion.ITS_23_5)) {
+                  return true;
+               }
+            }
+            catch (NullPointerException nullErr) {
+               //System.out.println("checking similarity of null correlation");
+               return true;
+            }
+         }
+      }
+
+      return false;
    }
 
    public double corrDistance(Cluster otherCluster, distType type) {
