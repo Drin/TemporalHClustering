@@ -8,8 +8,8 @@ package TemporalHClustering.dataTypes;
 public class IsolateCorrelation {
    private Isolate mIsolateOne, mIsolateTwo;
    private Double mCorrelation_16_23, mCorrelation_23_5;
-   private double upperThreshold_16_23 = 99.7, lowerThreshold_16_23 = 95;
-   private double upperThreshold_23_5 = 99.7, lowerThreshold_23_5 = 95;
+   private double mUpperThreshold_16_23 = 99.7, mLowerThreshold_16_23 = 95;
+   private double mUpperThreshold_23_5 = 99.7, mLowerThreshold_23_5 = 95;
 
    private String mAggregationMethod = "average";
 
@@ -35,13 +35,13 @@ public class IsolateCorrelation {
    }
 
    public void setThresholds_16_23(double lower, double upper) {
-      upperThreshold_16_23 = upper;
-      lowerThreshold_16_23 = lower;
+      mUpperThreshold_16_23 = upper;
+      mLowerThreshold_16_23 = lower;
    }
 
    public void setThresholds_23_5(double lower, double upper) {
-      upperThreshold_23_5 = upper;
-      lowerThreshold_23_5 = lower;
+      mUpperThreshold_23_5 = upper;
+      mLowerThreshold_23_5 = lower;
    }
 
    public void set16_23(double correlation) {
@@ -72,12 +72,57 @@ public class IsolateCorrelation {
       return has16_23() && has23_5();
    }
 
+   public boolean debugSimilar() {
+      System.out.println(mIsolateOne + " and " + mIsolateTwo +
+       "correlation: " + mCorrelation_16_23 + "(16-23) correlation: " + mCorrelation_23_5 + "(23-5)");
+
+      System.out.println("16-23 Threshold: " + mUpperThreshold_16_23 +
+       "23-5 Threshold: " + mUpperThreshold_23_5);
+
+      try {
+         if (mCorrelation_16_23 <= mUpperThreshold_16_23 || mCorrelation_23_5 <= mUpperThreshold_23_5) {
+            return false;
+         }
+      }
+      catch (NullPointerException nullErr) {
+         return false;
+      }
+
+      return true;
+   }
+
+   public boolean isSimilar() {
+      try {
+         if (mCorrelation_16_23 <= mUpperThreshold_16_23 || mCorrelation_23_5 <= mUpperThreshold_23_5) {
+            return false;
+         }
+      }
+      catch (NullPointerException nullErr) {
+         return false;
+      }
+
+      return true;
+   }
+
+   public boolean isDifferent() {
+      try {
+         if (mCorrelation_16_23 <= mLowerThreshold_16_23 || mCorrelation_23_5 <= mLowerThreshold_23_5) {
+            return true;
+         }
+      }
+      catch (NullPointerException nullErr) {
+         return true;
+      }
+
+      return false;
+   }
+
    public Double getCorrelation() {
       if (mCorrelation_16_23 != null && mCorrelation_23_5 != null) {
-         if (mCorrelation_16_23 < lowerThreshold_16_23 || mCorrelation_23_5 < lowerThreshold_23_5) {
+         if (mCorrelation_16_23 < mLowerThreshold_16_23 || mCorrelation_23_5 < mLowerThreshold_23_5) {
             return 0.0;
          }
-         else if (mCorrelation_16_23 > upperThreshold_16_23 && mCorrelation_23_5 > upperThreshold_23_5) {
+         else if (mCorrelation_16_23 > mUpperThreshold_16_23 && mCorrelation_23_5 > mUpperThreshold_23_5) {
             return 100.0;
          }
 

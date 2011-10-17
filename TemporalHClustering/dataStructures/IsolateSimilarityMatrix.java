@@ -50,6 +50,10 @@ public class IsolateSimilarityMatrix {
    public double getCorrelationVal(Isolate isolateOne, Isolate isolateTwo) {
       IsolateCorrelation correlation = getCorrelation(isolateOne, isolateTwo);
 
+      if (correlation == null) {
+         correlation = getCorrelation(isolateTwo, isolateOne);
+      }
+
 
       /*
       if (correlation != null) {
@@ -63,6 +67,11 @@ public class IsolateSimilarityMatrix {
 
    public void transformCorrelation(Isolate isolateOne, Isolate isolateTwo, double upperThreshold, double lowerThreshold) {
       IsolateCorrelation correlation = getCorrelation(isolateOne, isolateTwo);
+
+      if (correlation == null) {
+         correlation = getCorrelation(isolateTwo, isolateOne);
+      }
+
       if (correlation != null) {
          if (correlation.getCorrelation() > upperThreshold) {
             correlation.set16_23(100);

@@ -166,6 +166,10 @@ public class IsolateFileParser {
                */
                if (partialCorrelations.hasCorrelation(currentIsolate, otherIsolate)) {
                   isolateCorr = partialCorrelations.getCorrelation(currentIsolate, otherIsolate);
+
+                  if (isolateCorr == null) {
+                     isolateCorr = partialCorrelations.getCorrelation(otherIsolate, currentIsolate);
+                  }
                }
                else {
                   isolateCorr = new IsolateCorrelation(currentIsolate, otherIsolate);

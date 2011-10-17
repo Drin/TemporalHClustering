@@ -25,14 +25,6 @@ public class FileSettings {
       return mRegion;
    }
 
-   public void setDistanceThreshold(double distThreshold) {
-      mDistThreshold = distThreshold;
-   }
-
-   public double getDistanceThreshold() {
-      return mDistThreshold;
-   }
-
    public void setLowerThreshold(double lowThreshold) {
       mLowerThreshold = lowThreshold;
    }

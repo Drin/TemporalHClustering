@@ -426,6 +426,10 @@ public class HClustering {
                else if (mClusterPreference.equals("similarity")) {
                   if (clustDist > maxSimilarity && cluster_A.isSimilar(cluster_B)) {
                      maxSimilarity = clustDist;
+                     if (maxSimilarity < 95) {
+                        System.out.println("WTF SIMILARITY < 95");
+                        System.out.println("is it really similar: " + (cluster_A.debugSimilar(cluster_B)));
+                     }
                      //System.out.printf("maxSimilarity: %.03f\n", maxSimilarity);
                      closeClusters = new Point(clustOne, clustTwo);
                   }
@@ -629,6 +633,9 @@ public class HClustering {
             else if (mClusterPreference.equals("similarity")) {
                if (clustDist > maxSimilarity && newCluster.isSimilar(currClust)) {
                   maxSimilarity = clustDist;
+                  if (maxSimilarity < 95) {
+                     System.out.println("WTF SIMILARITY < 95");
+                  }
                   //System.out.printf("maxSimilarity: %.03f\n", maxSimilarity);
                   closeClusterNdx = clustNdx;
                }
