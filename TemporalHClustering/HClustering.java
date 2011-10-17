@@ -59,11 +59,9 @@ public class HClustering {
    private double mThresholding = -1;
    private int mNumRegions;
 
-   private String mClusterPreference = "similarity";
-
    private static final String ARG_SEPARATOR = "&";
    private static double defaultThreshold = 99.7;
-   private static String mOutputFileName = "";
+   private static String mOutputFileName = "", mClusterPreference = "structure";
 
    public HClustering(int numRegions) {
       super();
@@ -426,10 +424,6 @@ public class HClustering {
                else if (mClusterPreference.equals("similarity")) {
                   if (clustDist > maxSimilarity && cluster_A.isSimilar(cluster_B)) {
                      maxSimilarity = clustDist;
-                     if (maxSimilarity < 95) {
-                        System.out.println("WTF SIMILARITY < 95");
-                        System.out.println("is it really similar: " + (cluster_A.debugSimilar(cluster_B)));
-                     }
                      //System.out.printf("maxSimilarity: %.03f\n", maxSimilarity);
                      closeClusters = new Point(clustOne, clustTwo);
                   }
@@ -633,9 +627,6 @@ public class HClustering {
             else if (mClusterPreference.equals("similarity")) {
                if (clustDist > maxSimilarity && newCluster.isSimilar(currClust)) {
                   maxSimilarity = clustDist;
-                  if (maxSimilarity < 95) {
-                     System.out.println("WTF SIMILARITY < 95");
-                  }
                   //System.out.printf("maxSimilarity: %.03f\n", maxSimilarity);
                   closeClusterNdx = clustNdx;
                }
@@ -730,6 +721,11 @@ public class HClustering {
    public static void setOutputFileName(String fileName) {
       System.out.println("===============\nSetting File name to " + fileName + "\n===============");
       mOutputFileName = fileName;
+   }
+
+   public static void setClusterPreference(String clusterPreference) {
+      System.out.println("===============\nSetting cluster distance preference to " + clusterPreference + "\n===============");
+      mClusterPreference = clusterPreference;
    }
 
 }

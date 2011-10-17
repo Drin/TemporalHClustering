@@ -34,14 +34,16 @@ import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 import javax.swing.JSeparator;
 import javax.swing.BoxLayout;
+import javax.swing.JComboBox;
 
 public class InputDialog extends JDialog {
-   private final int DIALOG_HEIGHT = 365, DIALOG_WIDTH = 415;
+   private final int DIALOG_HEIGHT = 400, DIALOG_WIDTH = 415;
    private String recentlyAccessedDir = "", mArgDelim = null;
    private Container mPane = null, mOwner = null;
    private Map<File, String> dataFileMap;
 
    private ButtonGroup firstDataRegion, secondDataRegion;
+   private JComboBox clusterRestrictions;
    private JTextField firstDataFile, secondDataFile, outputDataFile;
    private JTextField firstDataUpperThreshold, secondDataUpperThreshold;
    private JTextField firstDataLowerThreshold, secondDataLowerThreshold;
@@ -73,6 +75,8 @@ public class InputDialog extends JDialog {
 
       secondDataUpperThreshold = new JTextField("99.7", 20);
       secondDataLowerThreshold = new JTextField("95.0", 20);
+
+      clusterRestrictions = new JComboBox(new String[] {"structure", "similarity"});
    }
 
    public InputDialog(Frame owner, String title) {
@@ -104,6 +108,8 @@ public class InputDialog extends JDialog {
 
       secondDataUpperThreshold = new JTextField("99.7", 20);
       secondDataLowerThreshold = new JTextField("95.0", 20);
+
+      clusterRestrictions = new JComboBox(new String[] {"structure", "similarity"});
    }
 
    public static void main(String[] args) {
@@ -124,7 +130,8 @@ public class InputDialog extends JDialog {
 
       //mPane.add(newGlobalThreshold(globalThreshold));
       
-      mPane.add(newOutputNameField(outputDataFile));
+      mPane.add(newHeaderField(outputDataFile, clusterRestrictions));
+      //mPane.add(newOutputNameField(outputDataFile));
 
       mPane.add(labelField);
       mPane.add(new JSeparator());
@@ -155,10 +162,12 @@ public class InputDialog extends JDialog {
    }
    */
 
-   public JPanel newOutputNameField(JTextField outputDataFileField) {
-      JPanel outputNameField = new JPanel();
+   public JPanel newHeaderField(JTextField outputDataFileField, JComboBox restrictionType) {
+      JPanel outputNameField = new JPanel(), preferenceField = new JPanel(), headerLayout = new JPanel();
 
-      //outputNameField.setLayout(new BoxLayout(outputNameField, BoxLayout.X_AXIS));
+      headerLayout.setLayout(new BoxLayout(headerLayout, BoxLayout.Y_AXIS));
+      headerLayout.setAlignmentY(Component.CENTER_ALIGNMENT);
+
       outputNameField.setLayout(new FlowLayout(FlowLayout.LEADING));
       outputNameField.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
 
@@ -166,7 +175,17 @@ public class InputDialog extends JDialog {
       outputNameField.add(outputDataFileField);
       outputNameField.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-      return outputNameField;
+      preferenceField.setLayout(new FlowLayout(FlowLayout.LEADING));
+      preferenceField.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
+
+      preferenceField.add(new JLabel("Cluster distance preference:"));
+      preferenceField.add(restrictionType);
+      preferenceField.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+      headerLayout.add(outputNameField);
+      headerLayout.add(preferenceField);
+
+      return headerLayout;
    }
 
    public JPanel newFileField(ButtonGroup regionSelection, JTextField fileNameField,
@@ -294,6 +313,7 @@ public class InputDialog extends JDialog {
             try {
                //HClustering.setDistanceThreshold(Double.parseDouble(globalThreshold.getText()));
                HClustering.setOutputFileName(outputDataFile.getText());
+               HClustering.setClusterPreference((String) clusterRestrictions.getSelectedItem());
                double firstUpperThreshold = Double.parseDouble(firstDataUpperThreshold.getText());
                double firstLowerThreshold = Double.parseDouble(firstDataLowerThreshold.getText());
 
