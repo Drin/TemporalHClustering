@@ -24,7 +24,7 @@ public class Cluster {
    private IsolateSimilarityMatrix similarityMatrix;
 
    private String mFecalSeries = null, mImmSeries = null,
-    mLaterSeries = null, mDeepSeries = null;
+    mLaterSeries = null, mDeepSeries = null, mBeforeSeries = null;
 
    public Cluster(IsolateSimilarityMatrix matrix) {
       similarityMatrix = matrix;
@@ -683,6 +683,11 @@ public class Cluster {
       return mDeepSeries;
    }
 
+   public String getBeforeSeries() {
+      if (mBeforeSeries == null) getSeriesCounts();
+      return mBeforeSeries;
+   }
+
    public void getSeriesCounts() {
       String tempOutput = "";
       int numDays = 6;
@@ -694,6 +699,7 @@ public class Cluster {
       Map<Integer, Integer> immMap = new LinkedHashMap<Integer, Integer>();
       Map<Integer, Integer> laterMap = new LinkedHashMap<Integer, Integer>();
       Map<Integer, Integer> deepMap = new LinkedHashMap<Integer, Integer>();
+      Map<Integer, Integer> beforeMap = new LinkedHashMap<Integer, Integer>();
 
       for (Isolate sample : isolates) {
          Map<Integer, Integer> sampleMap = null;
@@ -721,6 +727,9 @@ public class Cluster {
 
             case DEEP:
                sampleMap = deepMap;
+
+            case BEFORE:
+               sampleMap = beforeMap;
          }
 
          if (!sampleMap.containsKey(day)) {
@@ -742,19 +751,21 @@ public class Cluster {
 
       //will display Day:, 1, 2, 3, ... for csv formatted temporal diagram
       
-      String fecalSeries = "", immSeries = "", laterSeries = "", deepSeries = "";
+      String fecalSeries = "", immSeries = "", laterSeries = "", deepSeries = "", beforeSeries = "";
 
       for (int day = 1; day <= numDays; day++) {
          fecalSeries += "," + (fecalMap.containsKey(day) ? fecalMap.get(day) : 0);
          immSeries += "," + (immMap.containsKey(day) ? immMap.get(day) : 0);
          laterSeries += "," + (laterMap.containsKey(day) ? laterMap.get(day) : 0);
          deepSeries += "," + (deepMap.containsKey(day) ? deepMap.get(day) : 0);
+         beforeSeries += "," + (beforeMap.containsKey(day) ? beforeMap.get(day) : 0);
       }
 
       mFecalSeries = fecalSeries.substring(1);
       mImmSeries = immSeries.substring(1);
       mLaterSeries = laterSeries.substring(1);
       mDeepSeries = deepSeries.substring(1);
+      mBeforeSeries = beforeSeries.substring(1);
    }
 
    public String toTemporalFormat(int clusterNum) {
@@ -773,6 +784,7 @@ public class Cluster {
       Map<Integer, Map<Integer, String>> immMap = new LinkedHashMap<Integer, Map<Integer, String>>();
       Map<Integer, Map<Integer, String>> laterMap = new LinkedHashMap<Integer, Map<Integer, String>>();
       Map<Integer, Map<Integer, String>> deepMap = new LinkedHashMap<Integer, Map<Integer, String>>();
+      Map<Integer, Map<Integer, String>> beforeMap = new LinkedHashMap<Integer, Map<Integer, String>>();
 
       for (Isolate sample : isolates) {
          Map<Integer, Map<Integer, String>> sampleMap = null;
@@ -801,6 +813,9 @@ public class Cluster {
             case DEEP:
                sampleMap = deepMap;
                marker = ", D";
+            case BEFORE:
+               sampleMap = beforeMap;
+               marker = ", B";
          }
 
          if (!sampleMap.containsKey(isolateNum)) {
@@ -818,8 +833,8 @@ public class Cluster {
          tickMap.put(day, marker);
       }
 
-      tempOutput += String.format("%s\n%s\n%s%s%s%s\n", "cluster_" + clusterNum,
-       diagramHeader, toIsolateTable(fecalMap), toIsolateTable(immMap), toIsolateTable(laterMap), toIsolateTable(deepMap));
+      tempOutput += String.format("%s\n%s\n%s%s%s%s%s\n", "cluster_" + clusterNum,
+       diagramHeader, toIsolateTable(fecalMap), toIsolateTable(immMap), toIsolateTable(laterMap), toIsolateTable(deepMap), toIsolateTable(beforeMap));
 
       /*
        * auto generate some partially completed g.raphael bar chart code

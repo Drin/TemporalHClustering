@@ -306,6 +306,8 @@ public class HClustering {
    private List<ClusterDendogram> clusterIsolateList(IsolateSimilarityMatrix similarityMatrix,
     List<Isolate> isolates, Cluster.distType type) {
       //represent fecal samples
+      List<ClusterDendogram> clusterB = new ArrayList<ClusterDendogram>();
+      //represent fecal samples
       List<ClusterDendogram> clusterF = new ArrayList<ClusterDendogram>();
       //represent immediate (after) samples
       List<ClusterDendogram> clusterI = new ArrayList<ClusterDendogram>();
@@ -335,6 +337,9 @@ public class HClustering {
             case DEEP:
                clusterD.add(new ClusterDendogram(newCluster, newDendogram));
                break;
+            case BEFORE:
+               clusterB.add(new ClusterDendogram(newCluster, newDendogram));
+               break;
             default:
                System.err.println("serious error here");
                break;
@@ -347,6 +352,7 @@ public class HClustering {
       clusterI = clusterGroup(clusterI, type);
       clusterL = clusterGroup(clusterL, type);
       clusterD = clusterGroup(clusterD, type);
+      clusterB = clusterGroup(clusterB, type);
 
 
       //cluster each group together:
@@ -357,13 +363,16 @@ public class HClustering {
       //logical traps such as where to put clusters that are combined and all of
       //the problems that followed from that
       clusters.addAll(clusterF);
+      clusters.addAll(clusterD);
+      clusters = clusterGroup(clusters, type);
+
       clusters.addAll(clusterI);
       clusters = clusterGroup(clusters, type);
 
       clusters.addAll(clusterL);
       clusters = clusterGroup(clusters, type);
 
-      clusters.addAll(clusterD);
+      clusters.addAll(clusterB);
       clusters = clusterGroup(clusters, type);
 
       //clusters within all the day's clusters

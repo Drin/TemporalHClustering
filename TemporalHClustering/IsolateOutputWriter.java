@@ -24,7 +24,7 @@ public class IsolateOutputWriter {
       String outFileName = filePrefix + "_temporalCharts.html";
       String chartFormat = "";
       
-      String fecalSeries = "", immSeries = "", laterSeries = "", deepSeries = "";
+      String fecalSeries = "", immSeries = "", laterSeries = "", deepSeries = "", beforeSeries = "";
 
       int numCluster = 0;
       for (ClusterDendogram clustDend : clustDends) {
@@ -35,8 +35,9 @@ public class IsolateOutputWriter {
          immSeries = tmpClust.getImmSeries();
          laterSeries = tmpClust.getLaterSeries();
          deepSeries = tmpClust.getDeepSeries();
+         beforeSeries = tmpClust.getBeforeSeries();
 
-         graphCharts.add(newGraphChart(String.format("cluster%d", numCluster++), fecalSeries, immSeries, laterSeries, deepSeries));
+         graphCharts.add(newGraphChart(String.format("cluster%d", numCluster++), fecalSeries, immSeries, laterSeries, deepSeries, beforeSeries));
       }
 
       String htmlStr = buildChartHtml(graphContainers, buildChartJs(graphCharts));
@@ -85,7 +86,7 @@ public class IsolateOutputWriter {
       return javascriptStr + "});";
    }
 
-   private static String newGraphChart(String clusterName, String fecalSeries, String immSeries, String laterSeries, String deepSeries) {
+   private static String newGraphChart(String clusterName, String fecalSeries, String immSeries, String laterSeries, String deepSeries, String beforeSeries) {
       return String.format(
          "var %s = new Highcharts.Chart({\n" +
             "chart: {\n" +
@@ -153,8 +154,11 @@ public class IsolateOutputWriter {
             "}, {\n" +
                "name: 'Deep',\n" +
                "data: [%s]\n" +
+            "}, {\n" +
+               "name: 'Before',\n" +
+               "data: [%s]\n" +
             "}]\n" +
-         "});", clusterName, clusterName, clusterName, fecalSeries, immSeries, laterSeries, deepSeries);
+         "});", clusterName, clusterName, clusterName, fecalSeries, immSeries, laterSeries, deepSeries, beforeSeries);
    }
 
    public static void outputTemporalClusters(List<ClusterDendogram> clustDends, String filePrefix) {
