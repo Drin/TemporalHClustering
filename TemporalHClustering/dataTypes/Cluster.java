@@ -727,9 +727,11 @@ public class Cluster {
 
             case DEEP:
                sampleMap = deepMap;
+               break;
 
             case BEFORE:
                sampleMap = beforeMap;
+               break;
          }
 
          if (!sampleMap.containsKey(day)) {
@@ -813,9 +815,11 @@ public class Cluster {
             case DEEP:
                sampleMap = deepMap;
                marker = ", D";
+               break;
             case BEFORE:
                sampleMap = beforeMap;
                marker = ", B";
+               break;
          }
 
          if (!sampleMap.containsKey(isolateNum)) {
