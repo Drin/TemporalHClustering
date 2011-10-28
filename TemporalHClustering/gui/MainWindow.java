@@ -1,6 +1,7 @@
 package TemporalHClustering.gui;
 
 import TemporalHClustering.gui.listeners.clusterListeners.ClusterSingleListener;
+import TemporalHClustering.gui.listeners.dendogramListeners.DendogramListener;
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -24,10 +25,11 @@ public class MainWindow extends JFrame {
       //Menus that are on the Menu Bar
       JMenu fileMenu = new JMenu("File");
       JMenu clusterMenu = new JMenu("Cluster");
+      JMenu dendogramMenu = new JMenu("Dendogram");
       //JMenu pyroMenu = new JMenu("PyroSequencing");
 
       //width is loosely calculated as number of characters in JMenu * 10
-      setSize(new Dimension(250, 100));
+      setSize(new Dimension(250, 300));
        
       //Items that will go into the File menu
       JMenuItem importFile = new JMenuItem("View dendogram file");
@@ -36,7 +38,9 @@ public class MainWindow extends JFrame {
        
       //Items that will go into the cluster menu
       JMenuItem clusterSingle = new JMenuItem("E.coli data file");
-      JMenuItem clusterMany = new JMenuItem("E.coli data directory");
+
+      //Items that will go into the dendogram menu
+      JMenuItem thresholdDendogram = new JMenuItem("Apply dendogram threshold");
        
       //Listener for exit menu item
       exitProgram.addActionListener(new ActionListener() {
@@ -62,6 +66,10 @@ public class MainWindow extends JFrame {
       //Listener for clusterSingle menu item
       ClusterSingleListener clustSingleListener = new ClusterSingleListener(this);
       clusterSingle.addActionListener(clustSingleListener);
+
+      //Listener for thresholdDendogram menu item
+      DendogramListener dendThresholdListener = new DendogramListener(this);
+      thresholdDendogram.addActionListener(dendThresholdListener);
        
       //Listener for clusterMany menu item
       /*
@@ -76,11 +84,13 @@ public class MainWindow extends JFrame {
       fileMenu.add(exitProgram);
        
       clusterMenu.add(clusterSingle);
-      clusterMenu.add(clusterMany);
+
+      dendogramMenu.add(thresholdDendogram);
 
       //adding Menus to the MenuBar
       mainMenuBar.add(fileMenu);
       mainMenuBar.add(clusterMenu);
+      mainMenuBar.add(dendogramMenu);
        
       setJMenuBar(mainMenuBar);
       //setSize(1000, 760);

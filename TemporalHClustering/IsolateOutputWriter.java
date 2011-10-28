@@ -9,6 +9,8 @@ import TemporalHClustering.dataStructures.IsolateSimilarityMatrix;
 import TemporalHClustering.distanceMeasures.IsolateSimilarity;
 
 import TemporalHClustering.dendogram.Dendogram;
+import TemporalHClustering.dendogram.DendogramTree;
+import TemporalHClustering.dendogram.TreeNode;
 
 import java.io.File;
 import java.io.BufferedWriter;
@@ -17,6 +19,43 @@ import java.util.List;
 import java.util.ArrayList;
 
 public class IsolateOutputWriter {
+
+   public static void outputTemporalCharts(DendogramTree tree, String filePrefix) {
+      List<String> graphContainers = new ArrayList<String>();
+      List<String> graphCharts = new ArrayList<String>();
+      String outFileName = filePrefix + "_temporalCharts.html";
+      String chartFormat = "";
+      
+      String fecalSeries = "", immSeries = "", laterSeries = "", deepSeries = "", beforeSeries = "";
+
+      int numCluster = 0;
+      for (TreeNode treeNode : tree.getTree()) {
+         graphContainers.add(String.format("<div id='cluster%d' class='highcharts-container'></div>", numCluster));
+
+         fecalSeries = treeNode.getFecalSeries();
+         immSeries = treeNode.getImmSeries();
+         laterSeries = treeNode.getLaterSeries();
+         deepSeries = treeNode.getDeepSeries();
+         beforeSeries = treeNode.getBeforeSeries();
+
+         graphCharts.add(newGraphChart(String.format("cluster%d", numCluster++), fecalSeries, immSeries, laterSeries, deepSeries, beforeSeries));
+      }
+
+      String htmlStr = buildChartHtml(graphContainers, buildChartJs(graphCharts));
+
+      try {
+         File outputFile = new File(outFileName);
+         BufferedWriter fileWriter = new BufferedWriter(new FileWriter(outputFile));
+
+         fileWriter.write(htmlStr);
+         fileWriter.close();
+      }
+      catch(Exception e1) {
+         //System.out.println("Error writing cluster to file");
+         e1.printStackTrace();
+         System.exit(1);
+      }
+   }
 
    public static void outputTemporalCharts(List<ClusterDendogram> clustDends, String filePrefix) {
       List<String> graphContainers = new ArrayList<String>();
