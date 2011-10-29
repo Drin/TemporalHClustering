@@ -170,6 +170,9 @@ public class ThresholdDialog extends JDialog {
 
       okayButton.addActionListener(new ActionListener(){
          public void actionPerformed(ActionEvent e) {
+            String fileName = dendogramFileField.getText();
+            String filePrefix = fileName.substring(0, fileName.indexOf(".xml"));
+
             System.out.println("constructing dendogram parser...");
             DendogramParser parser = new DendogramParser(dendogramFileField.getText());
 
@@ -177,7 +180,7 @@ public class ThresholdDialog extends JDialog {
             DendogramTree tree = parser.parseDendogram(Double.valueOf(cutoffThresholdField.getText()));
 
             System.out.println("finished parsing dendogram...");
-            IsolateOutputWriter.outputTemporalCharts(tree, "TESTEST");
+            IsolateOutputWriter.outputTemporalCharts(tree, filePrefix, cutoffThresholdField.getText());
             //TODO use IsolateOutputWriter to output this to highcharts.
             dispose();
          }

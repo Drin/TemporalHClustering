@@ -5,8 +5,9 @@ import TemporalHClustering.dendogram.DendogramTree;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.LinkedHashMap;
@@ -75,56 +76,77 @@ public class DendogramParser extends DefaultHandler {
       NodeList treeList = mDom.getElementsByTagName(TAG_DENDOGRAM_TREE);
 
       for (int treeNdx = 0; treeNdx < treeList.getLength(); treeNdx++) {
-         dendogram.addIsolateList(parseNodeChildNode((Element) treeList.item(treeNdx), threshold));
+         System.out.println("checking " + treeNdx + "th tree");
+         for (List<Isolate> isolateList : parseNodeChildNode((Element) treeList.item(treeNdx), threshold)) {
+            dendogram.addIsolateList(isolateList);
+         }
       }
 
       return dendogram;
    }
 
-   public List<Isolate> parseNodeChildNode(Element clusterElem, double threshold) {
+   public List<List<Isolate>> parseNodeChildNode(Element clusterElem, double threshold) {
       double correlation = Double.valueOf(clusterElem.getAttribute("correlation"));
-      List<Isolate> isolateList = new ArrayList<Isolate>();
+      List<List<Isolate>> isolateLists = new ArrayList<List<Isolate>>();
 
       if (correlation >= threshold) {
+         List<Isolate> isolateList = new ArrayList<Isolate>();
          NodeList isolateNodes = clusterElem.getElementsByTagName(TAG_LEAF);
 
-         System.out.println("extracting leaves...");
+         //System.out.println("extracting " + isolateNodes.getLength() + " leaves...");
          for (int isolateNdx = 0; isolateNdx < isolateNodes.getLength(); isolateNdx++) {
             Isolate isolate = getIsolate(isolateNodes.item(isolateNdx));
+
             if (isolate != null) {
-               System.out.println("extracting isolate " + isolate + "...");
+               //System.out.println("extracting isolate " + isolate + "...");
                isolateList.add(isolate);
             }
          }
-         System.out.println("finished extracting leaves...");
+         //System.out.println("finished extracting leaves...");
+
+         isolateLists.add(isolateList);
       }
 
       else {
-      //TODO this basically duplicates all of the work done above. it's terrible. maybe it's because I'm doing it recursively
-      //and branches are overlapping?
-         NodeList nodeList = clusterElem.getElementsByTagName(TAG_NODE);
+         NodeList nodeList = clusterElem.getChildNodes();
 
          for (int nodeNdx = 0; nodeNdx < nodeList.getLength(); nodeNdx++) {
-            List<Isolate> tmpIsolateList = parseNodeChildNode((Element) nodeList.item(nodeNdx), threshold);
-            isolateList.addAll(tmpIsolateList);
+            if (!(nodeList.item(nodeNdx) instanceof Element)) {
+               continue;
+            }
 
-            System.out.println("correlation for current node: " + correlation);
-            printIsolateList(tmpIsolateList);
+            Element childElement = (Element) nodeList.item(nodeNdx);
+            if (childElement.getTagName().equals(TAG_NODE)) {
+               for (List<Isolate> isolateList : parseNodeChildNode(childElement, threshold)) {
+                  isolateLists.add(isolateList);
+               }
+            }
+            else if (childElement.getTagName().equals(TAG_LEAF)) {
+               List<Isolate> isolateList = new LinkedList<Isolate>();
+               isolateList.add(getIsolate(childElement));
+
+               isolateLists.add(isolateList);
+            }
+
+            //System.out.println("correlation for current node: " + correlation);
+            //printIsolateList(tmpIsolateList);
          }
       }
-      return isolateList;
+      return isolateLists;
    }
 
-   private Isolate getIsolate(Node isolateNode) {
-      String isolateName = ((Element) isolateNode).getAttribute("data");
-
-      System.err.println("parsing isolateName " + isolateName + "...");
+   private Isolate getIsolate(Element isolateElement) {
+      String isolateName = isolateElement.getAttribute("isolate");
 
       if (isolateName == null || isolateName.equals("")) {
          return null;
       }
 
       return new Isolate(isolateName);
+   }
+
+   private Isolate getIsolate(Node isolateNode) {
+      return getIsolate((Element) isolateNode);
    }
 
    private Node getNode(Node root, String name) {

@@ -20,10 +20,10 @@ import java.util.ArrayList;
 
 public class IsolateOutputWriter {
 
-   public static void outputTemporalCharts(DendogramTree tree, String filePrefix) {
+   public static void outputTemporalCharts(DendogramTree tree, String filePrefix, String thresholdValue) {
       List<String> graphContainers = new ArrayList<String>();
       List<String> graphCharts = new ArrayList<String>();
-      String outFileName = filePrefix + "_temporalCharts.html";
+      String outFileName = filePrefix + "_thresholdedClusters_" + thresholdValue + ".html";
       String chartFormat = "";
       
       String fecalSeries = "", immSeries = "", laterSeries = "", deepSeries = "", beforeSeries = "";

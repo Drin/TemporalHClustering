@@ -88,7 +88,7 @@ public class DendogramLeaf implements Dendogram {
 
    public String toXML(String spacing) {
       String xmlStr = String.format("%s<leaf correlation = \"%.02f\"" +
-       " data = \"%s\"/>\n", spacing, mCorrelation, toString());
+       " isolate = \"%s\"/>\n", spacing, mCorrelation, toString());
 
       return xmlStr;
    }
