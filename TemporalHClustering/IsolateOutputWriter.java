@@ -304,10 +304,39 @@ public class IsolateOutputWriter {
       }
    }
 
+   public static void outputClusters(DendogramTree tree, String filePrefix) {
+      BufferedWriter isolateWriter = null;
+      String isolateOutput = "";
+
+      int clusterNum = 0;
+      for (TreeNode node : tree.getTree()) {
+         isolateOutput += "Cluster " + (clusterNum++) + ",\n";
+         for (Isolate isolate : node.getIsolateList()) {
+            isolateOutput += ",\t" + isolate + "\n";
+         }
+      }
+
+      //outputs xml and cluster data
+
+      try {
+         File isolateFile = new File(filePrefix + "_thresholdedIsolates.csv");
+
+         isolateWriter = new BufferedWriter(new FileWriter(isolateFile));
+
+         isolateWriter.write("Cluster Isolate Listing\n");
+         isolateWriter.write(isolateOutput);
+         isolateWriter.close();
+      }
+      catch(Exception e1) {
+         e1.printStackTrace();
+         System.exit(1);
+      }
+   }
+
    public static void outputClusters(List<ClusterDendogram> clustDends,
     String outFileDir, String outputFileName) {
-      BufferedWriter xmlWriter = null;
-      String xmlOutput = "";
+      BufferedWriter xmlWriter = null, isolateWriter = null;
+      String xmlOutput = "", isolateOutput = "";
 
       List<Dendogram> dendogramList = new ArrayList<Dendogram>();
       for (ClusterDendogram clusterDend : clustDends) {
@@ -317,8 +346,14 @@ public class IsolateOutputWriter {
 
       //System.out.println(DendogramNode.toUAGDot(dendogramList));
 
+      int clusterNum = 0;
       for (ClusterDendogram clustDend : clustDends) {
          xmlOutput += clustDend.getDendogram().getXML() + "\n";
+         isolateOutput += "Cluster " + (clusterNum++) + ",\n";
+
+         for (Isolate isolate : clustDend.getCluster().getIsolates()) {
+            isolateOutput += ",\t" + isolate + "\n";
+         }
          //System.out.println("dendogram: " + clustDend.getDendogram().getXML());
       }
 
@@ -342,11 +377,21 @@ public class IsolateOutputWriter {
          xmlWriter.write(xmlOutput);
          xmlWriter.write("</IsolateClusters>");
          xmlWriter.close();
+
+
+         isolateWriter = new BufferedWriter(new FileWriter(
+          new File(outputFileName.replace(".xml", "_isolates.csv"))));
+
+         isolateWriter.write("Cluster Isolate Listing\n");
+         isolateWriter.write(isolateOutput);
+         isolateWriter.close();
       }
       catch(Exception e1) {
          //System.out.println("Error writing cluster to file");
          e1.printStackTrace();
          System.exit(1);
       }
+
+      System.out.println("clustering runtime was " + HClustering.getRunTime());
    }
 }

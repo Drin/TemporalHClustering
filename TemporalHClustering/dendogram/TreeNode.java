@@ -10,6 +10,7 @@ import java.util.ArrayList;
 
 public class TreeNode {
    private Map<String, List<Isolate>> isolateMap;
+   private List<Isolate> isolateStore;
 
    private final String FECAL_KEY = "fecal";
    private final String IMM_KEY = "imm";
@@ -22,6 +23,7 @@ public class TreeNode {
 
    public TreeNode() {
       isolateMap = new HashMap<String, List<Isolate>>();
+      isolateStore = new ArrayList<Isolate>();
    }
 
    public void addIsolate(Isolate isolate) {
@@ -70,6 +72,7 @@ public class TreeNode {
 
       if (isolateList != null) {
          isolateList.add(isolate);
+         isolateStore.add(isolate);
       }
    }
 
@@ -125,5 +128,9 @@ public class TreeNode {
 
    public String getBeforeSeries() {
       return getSeriesCounts(BEFORE_KEY);
+   }
+
+   public List<Isolate> getIsolateList() {
+      return isolateStore;
    }
 }

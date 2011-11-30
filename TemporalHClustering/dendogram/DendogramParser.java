@@ -139,7 +139,11 @@ public class DendogramParser extends DefaultHandler {
       String isolateName = isolateElement.getAttribute("isolate");
 
       if (isolateName == null || isolateName.equals("")) {
-         return null;
+         isolateName = isolateElement.getAttribute("data");
+
+         if (isolateName == null || isolateName.equals("")) {
+            return null;
+         }
       }
 
       return new Isolate(isolateName);

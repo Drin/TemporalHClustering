@@ -380,16 +380,18 @@ public class InputDialog extends JDialog {
                   return;
                }
 
-               if (!secondDataFile.getText().equals("") && secondRegion != null) {
-                  args.add(String.format(secondDataFile.getText() + mArgDelim + secondRegion.getText() +
-                   mArgDelim + "%.03f" + mArgDelim + "%.03f", secondLowerThreshold, secondUpperThreshold));
-               }
-               else if (!secondDataFile.getText().equals("") || secondRegion != null) {
-                  JOptionPane.showMessageDialog(mOwner,
-                   "Invalid parameters for second data input",
-                   "Invalid Options", JOptionPane.ERROR_MESSAGE);
+               if (secondRegion != null) {
+                  if (!secondDataFile.getText().equals("") && secondRegion != null) {
+                     args.add(String.format(secondDataFile.getText() + mArgDelim + secondRegion.getText() +
+                      mArgDelim + "%.03f" + mArgDelim + "%.03f", secondLowerThreshold, secondUpperThreshold));
+                  }
+                  else if (!secondDataFile.getText().equals("") || secondRegion != null) {
+                     JOptionPane.showMessageDialog(mOwner,
+                      "Invalid parameters for second data input",
+                      "Invalid Options", JOptionPane.ERROR_MESSAGE);
 
-                  return;
+                     return;
+                  }
                }
             }
             catch (NullPointerException emptyValErr) {

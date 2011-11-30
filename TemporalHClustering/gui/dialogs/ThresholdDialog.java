@@ -181,7 +181,8 @@ public class ThresholdDialog extends JDialog {
 
             System.out.println("finished parsing dendogram...");
             IsolateOutputWriter.outputTemporalCharts(tree, filePrefix, cutoffThresholdField.getText());
-            //TODO use IsolateOutputWriter to output this to highcharts.
+            IsolateOutputWriter.outputClusters(tree, filePrefix);
+
             dispose();
          }
       });

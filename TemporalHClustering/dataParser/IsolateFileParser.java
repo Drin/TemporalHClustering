@@ -68,7 +68,7 @@ public class IsolateFileParser {
    //public Map<Integer, List<Isolate>> extractData(IsolateSimilarityMatrix similarityMatrix) {
    //public Map<Connectivity, IsolateSimilarityMatrix> extractData(Map<String, Map<Integer, List<Isolate>>> dataMap) {
    //public void extractData(Map<String, Map<Integer, List<Isolate>>> dataMap) {
-   public void extractData(Map<Connectivity, IsolateSimilarityMatrix> isolateNetworks, IsolateSimilarityMatrix partialCorrelations) {
+   public void extractData(Map<Connectivity, IsolateSimilarityMatrix> isolateNetworks, IsolateSimilarityMatrix partialCorrelations, int numRegions) {
       Map<Integer, Isolate> isolateIdMap = new HashMap<Integer, Isolate>();
       //Map<Integer, List<Isolate>> dataMap = new LinkedHashMap<Integer, List<Isolate>>();
 
@@ -194,7 +194,7 @@ public class IsolateFileParser {
                      break;
                }
 
-               if (isolateCorr.isCompleteCorrelation()) {
+               if (isolateCorr.isCompleteCorrelation(numRegions)) {
                   if (isolateCorr.getCorrelation() != null) {
                      //if (isolateCorr.getCorrelation() > mUpperThreshold) {
                      if (isolateCorr.getCorrelation() == 100) {

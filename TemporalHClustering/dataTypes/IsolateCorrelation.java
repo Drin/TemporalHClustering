@@ -68,8 +68,16 @@ public class IsolateCorrelation {
       return mCorrelation_23_5 != null;
    }
 
-   public boolean isCompleteCorrelation() {
-      return has16_23() && has23_5();
+   public boolean isCompleteCorrelation(int numRegions) {
+      if (numRegions == 1)
+         return has16_23() || has23_5();
+      else if (numRegions == 2)
+         return has16_23() && has23_5();
+      else {
+         System.err.println("invalid number of regions!");
+         System.exit(1);
+      }
+      return false;
    }
 
    public boolean debugSimilar() {
@@ -122,7 +130,7 @@ public class IsolateCorrelation {
          if (mCorrelation_16_23 < mLowerThreshold_16_23 || mCorrelation_23_5 < mLowerThreshold_23_5) {
             return 0.0;
          }
-         else if (mCorrelation_16_23 > mUpperThreshold_16_23 && mCorrelation_23_5 > mUpperThreshold_23_5) {
+         else if (mCorrelation_16_23 >= mUpperThreshold_16_23 && mCorrelation_23_5 >= mUpperThreshold_23_5) {
             return 100.0;
          }
 
@@ -140,6 +148,16 @@ public class IsolateCorrelation {
       else if (mCorrelation_16_23 == null && mCorrelation_23_5 == null)
          return null;
 
+      else {
+         if (mCorrelation_16_23 != null) {
+            return mCorrelation_16_23 >= mUpperThreshold_16_23 ? 100 :
+                   mCorrelation_16_23 < mLowerThreshold_16_23 ? 0 : mCorrelation_16_23;
+         }
+         else if (mCorrelation_23_5 != null) {
+            return mCorrelation_23_5 >= mUpperThreshold_23_5 ? 100 :
+                   mCorrelation_23_5 < mLowerThreshold_23_5 ? 0 : mCorrelation_23_5;
+         }
+      }
       return mCorrelation_16_23 != null ? mCorrelation_16_23 : mCorrelation_23_5;
    }
 

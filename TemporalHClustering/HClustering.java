@@ -61,6 +61,7 @@ public class HClustering {
 
    private static final String ARG_SEPARATOR = "&";
    private static double defaultThreshold = 99.7;
+   private static long mRunTime = -1;
    private static String mOutputFileName = "", mClusterPreference = "structure";
 
    public HClustering(int numRegions) {
@@ -118,14 +119,19 @@ public class HClustering {
             //MARKER old code
             //isolateMap = parser.extractData(similarityMatrix);
             //mIsolateNetworks = parser.extractData();
-            parser.extractData(isolateNetworks, partialCorrelations);
+            parser.extractData(isolateNetworks, partialCorrelations, dataFileMap.size());
          }
 
          System.out.println("strong Network size: " + isolateNetworks.get(Connectivity.STRONG).size());
       }
 
       //each point is a cluster, and we will combine two clusters in each iteration
+      long startTime = System.nanoTime();
+
       List<ClusterDendogram> clustDends = clusterIsolates(type, isolateNetworks);
+
+      long endTime = System.nanoTime();
+      mRunTime = endTime - startTime;
       //System.err.println("clustDends length: " + clustDends.size());
 
       //if the isolates yielded NO clusters (wtf data disappear?) or
@@ -164,6 +170,7 @@ public class HClustering {
       */
 
       //mappings represent days to isolates
+      IsolateSimilarityMatrix similarityMatrix = null;
       Map<String, Map<Integer, List<Isolate>>> technicianIsolateMap = null;
       //list of all constructed clusters
       List<ClusterDendogram> clusters = new ArrayList<ClusterDendogram>();
@@ -177,75 +184,79 @@ public class HClustering {
       //also, multiple similarity matrices are stored in the isolate networks
       //map so that it is possible to iterate on correlations based on their
       //strength instead of just going all willy nilly
-      IsolateSimilarityMatrix similarityMatrix = isolateNetworks.get(Connectivity.STRONG);
-      technicianIsolateMap = similarityMatrix.getIsolateMap();
+      if (isolateNetworks.containsKey(Connectivity.STRONG)) {
+         similarityMatrix = isolateNetworks.get(Connectivity.STRONG);
+         technicianIsolateMap = similarityMatrix.getIsolateMap();
 
-      for (String technician : technicianIsolateMap.keySet()) {
-         System.out.printf("clustering technician %s's dataset...\n", technician);
-         Map<Integer, List<Isolate>> isolateMap = technicianIsolateMap.get(technician);
+         for (String technician : technicianIsolateMap.keySet()) {
+            System.out.printf("clustering technician %s's dataset...\n", technician);
+            Map<Integer, List<Isolate>> isolateMap = technicianIsolateMap.get(technician);
 
-         for (int sampleDay : isolateMap.keySet()) {
-            System.out.printf("clustering day %d...\n", sampleDay);
-            //Cluster the list of isolates in this day
-            List<ClusterDendogram> currClusters = clusterIsolateList(similarityMatrix,
-             isolateMap.get(sampleDay), type);
+            for (int sampleDay : isolateMap.keySet()) {
+               System.out.printf("clustering day %d...\n", sampleDay);
+               //Cluster the list of isolates in this day
+               List<ClusterDendogram> currClusters = clusterIsolateList(similarityMatrix,
+                isolateMap.get(sampleDay), type);
 
-            IsolateOutputWriter.outputClustersByDay(similarityMatrix, sampleDay, currClusters);
-            /*
-            System.err.println("currClusters length: " + currClusters.size());
-            /*
-            for (ClusterDendogram clustDend : currClusters) {
-               System.out.println(clustDend.getDendogram().getXML());
+               IsolateOutputWriter.outputClustersByDay(similarityMatrix, sampleDay, currClusters);
+               /*
+               System.err.println("currClusters length: " + currClusters.size());
+               /*
+               for (ClusterDendogram clustDend : currClusters) {
+                  System.out.println(clustDend.getDendogram().getXML());
+               }
+               */
+
+               //System.err.printf("on day %d there are a total of %d clusters", sampleDay, clusters.size());
+               //Cluster all previous days with this day
+               clusters = clusterToDate(clusters, currClusters, type);
             }
-            */
 
-            //System.err.printf("on day %d there are a total of %d clusters", sampleDay, clusters.size());
-            //Cluster all previous days with this day
-            clusters = clusterToDate(clusters, currClusters, type);
+            technicianClusters.addAll(clusters);
+            clusters = new ArrayList<ClusterDendogram>();
          }
 
-         technicianClusters.addAll(clusters);
-         clusters = new ArrayList<ClusterDendogram>();
+         clusters = clusterGroup(technicianClusters, type);
       }
-
-      clusters = clusterGroup(technicianClusters, type);
 
       System.out.printf("\n\n================\nFINISHED STAGE 1. CLUSTERING SQUISHIES\n" +
        "===================\n\n");
       
-      similarityMatrix = isolateNetworks.get(Connectivity.WEAK);
-      technicianIsolateMap = similarityMatrix.getIsolateMap();
+      if (isolateNetworks.containsKey(Connectivity.WEAK)) {
+         similarityMatrix = isolateNetworks.get(Connectivity.WEAK);
+         technicianIsolateMap = similarityMatrix.getIsolateMap();
 
-      /*
-       * this is so that when doing the second pass through all of the clusters
-       * squishy correlations will also be known
-       */
-      for (ClusterDendogram clust : clusters) {
-         clust.getCluster().setSimilarityMatrix(similarityMatrix);
-      }
+         /*
+          * this is so that when doing the second pass through all of the clusters
+          * squishy correlations will also be known
+          */
+         for (ClusterDendogram clust : clusters) {
+            clust.getCluster().setSimilarityMatrix(similarityMatrix);
+         }
 
-      for (String technician : technicianIsolateMap.keySet()) {
-         System.out.printf("clustering technician %s's dataset...\n", technician);
-         Map<Integer, List<Isolate>> isolateMap = technicianIsolateMap.get(technician);
+         for (String technician : technicianIsolateMap.keySet()) {
+            System.out.printf("clustering technician %s's dataset...\n", technician);
+            Map<Integer, List<Isolate>> isolateMap = technicianIsolateMap.get(technician);
 
-         for (int sampleDay : isolateMap.keySet()) {
-            System.out.printf("clustering day %d...\n", sampleDay);
+            for (int sampleDay : isolateMap.keySet()) {
+               System.out.printf("clustering day %d...\n", sampleDay);
 
-            for (Isolate isolate : isolateMap.get(sampleDay)) {
-               //clusters = clusterWeakIsolates(similarityMatrix, clusters, isolate, type);
+               for (Isolate isolate : isolateMap.get(sampleDay)) {
+                  //clusters = clusterWeakIsolates(similarityMatrix, clusters, isolate, type);
 
-               if (!isolate.hasBeenClustered()) {
-                  Cluster newCluster = new Cluster(similarityMatrix, isolate);
-                  Dendogram newDendogram = new DendogramLeaf(isolate);
-                  clusters.add(new ClusterDendogram(newCluster, newDendogram));
+                  if (!isolate.hasBeenClustered()) {
+                     Cluster newCluster = new Cluster(similarityMatrix, isolate);
+                     Dendogram newDendogram = new DendogramLeaf(isolate);
+                     clusters.add(new ClusterDendogram(newCluster, newDendogram));
+                  }
+
                }
-
             }
          }
+
+         clusters = clusterGroup(clusters, type);
+
       }
-
-      clusters = clusterGroup(clusters, type);
-
 
       System.out.printf("\n\n==================\nFINISHED STAGE 2.\n======================\n\n");
       return clusters;
@@ -737,4 +748,7 @@ public class HClustering {
       mClusterPreference = clusterPreference;
    }
 
+   public static long getRunTime() {
+      return mRunTime;
+   }
 }
