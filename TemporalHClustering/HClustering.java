@@ -54,6 +54,7 @@ public class HClustering {
    private File mDataFile = null;
    private Map<File, FileSettings> dataFileMap;
    private Map<Connectivity, IsolateSimilarityMatrix> mIsolateNetworks;
+   private List<ClusterDendogram> mClustDends = null;
 
    private double mLowerThreshold, mUpperThreshold;
    private double mThresholding = -1;
@@ -73,6 +74,7 @@ public class HClustering {
       mLowerThreshold = 95;
       mUpperThreshold = 99.7;
       dataFileMap = new HashMap<File, FileSettings>();
+
       //MARKER
       //similarityMatrix = new IsolateSimilarityMatrix();
    }
@@ -155,6 +157,8 @@ public class HClustering {
       IsolateOutputWriter.outputCytoscapeFormat(clustDends, outputFileName);
       IsolateOutputWriter.outputTemporalClusters(clustDends, outputFileName);
       IsolateOutputWriter.outputTemporalCharts(clustDends, outputFileName);
+
+      mClustDends = clustDends;
 
       return success;
    }
@@ -746,6 +750,10 @@ public class HClustering {
    public static void setClusterPreference(String clusterPreference) {
       System.out.println("===============\nSetting cluster distance preference to " + clusterPreference + "\n===============");
       mClusterPreference = clusterPreference;
+   }
+
+   public List<ClusterDendogram> getClusterDendograms() {
+      return mClustDends;
    }
 
    public static long getRunTime() {

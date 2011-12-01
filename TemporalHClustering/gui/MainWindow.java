@@ -3,6 +3,8 @@ package TemporalHClustering.gui;
 import TemporalHClustering.gui.listeners.clusterListeners.ClusterSingleListener;
 import TemporalHClustering.gui.listeners.dendogramListeners.DendogramListener;
 
+import TemporalHClustering.dataTypes.ClusterDendogram;
+
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.event.ActionListener;
@@ -14,8 +16,12 @@ import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
+import java.util.List;
+
 public class MainWindow extends JFrame {
    private JMenuBar mainMenuBar;
+   
+   private List<ClusterDendogram> computedClusters = null;
    
    public MainWindow() {
       super("E.coli Clustering");
@@ -100,5 +106,9 @@ public class MainWindow extends JFrame {
    public void showWindow() {
       setVisible(true);
       repaint();
+   }
+
+   public void saveState(List<ClusterDendogram> clustDends) {
+      computedClusters = clustDends;
    }
 }
