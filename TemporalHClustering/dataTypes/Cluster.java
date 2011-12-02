@@ -24,7 +24,8 @@ public class Cluster {
    private IsolateSimilarityMatrix similarityMatrix;
 
    private String mFecalSeries = null, mImmSeries = null,
-    mLaterSeries = null, mDeepSeries = null, mBeforeSeries = null;
+    mLaterSeries = null, mDeepSeries = null, mBeforeSeries = null,
+    mUnknownSeries = null;
 
    public Cluster(IsolateSimilarityMatrix matrix) {
       similarityMatrix = matrix;
@@ -688,6 +689,11 @@ public class Cluster {
       return mBeforeSeries;
    }
 
+   public String getUnknownSeries() {
+      if (mUnknownSeries == null) getSeriesCounts();
+      return mUnknownSeries;
+   }
+
    public void getSeriesCounts() {
       String tempOutput = "";
       int numDays = 6;
@@ -700,15 +706,12 @@ public class Cluster {
       Map<Integer, Integer> laterMap = new LinkedHashMap<Integer, Integer>();
       Map<Integer, Integer> deepMap = new LinkedHashMap<Integer, Integer>();
       Map<Integer, Integer> beforeMap = new LinkedHashMap<Integer, Integer>();
+      Map<Integer, Integer> unknownMap = new LinkedHashMap<Integer, Integer>();
 
       for (Isolate sample : isolates) {
          Map<Integer, Integer> sampleMap = null;
 
-         String sampleName = sample.getName();
-         //if isolate name is 'f14-1' then extract 14 as the day
-         int day = Integer.parseInt(sampleName.substring(dayNdx, sampleName.indexOf("-")));
-         //if isolate name is 'f14-1' then extract 1 as the isolateNum
-         int isolateNum = Integer.parseInt(sampleName.substring(sampleName.indexOf("-") + 1, sampleName.length()));
+         int day = sample.getDay();
          int isolateCount = 0;
          
          //just so that we are adding to the correct map
@@ -732,6 +735,15 @@ public class Cluster {
             case BEFORE:
                sampleMap = beforeMap;
                break;
+
+            case UNKNOWN:
+               sampleMap = unknownMap;
+               break;
+
+            default:
+               System.out.println("invalid sample method for " +
+                sample.getName());
+               break;
          }
 
          if (!sampleMap.containsKey(day)) {
@@ -753,7 +765,8 @@ public class Cluster {
 
       //will display Day:, 1, 2, 3, ... for csv formatted temporal diagram
       
-      String fecalSeries = "", immSeries = "", laterSeries = "", deepSeries = "", beforeSeries = "";
+      String fecalSeries = "", immSeries = "", laterSeries = "",
+             deepSeries = "", beforeSeries = "", unknownSeries = "";
 
       for (int day = 1; day <= numDays; day++) {
          fecalSeries += "," + (fecalMap.containsKey(day) ? fecalMap.get(day) : 0);
@@ -761,6 +774,7 @@ public class Cluster {
          laterSeries += "," + (laterMap.containsKey(day) ? laterMap.get(day) : 0);
          deepSeries += "," + (deepMap.containsKey(day) ? deepMap.get(day) : 0);
          beforeSeries += "," + (beforeMap.containsKey(day) ? beforeMap.get(day) : 0);
+         unknownSeries += "," + (unknownMap.containsKey(day) ? unknownMap.get(day) : 0);
       }
 
       mFecalSeries = fecalSeries.substring(1);
@@ -768,6 +782,7 @@ public class Cluster {
       mLaterSeries = laterSeries.substring(1);
       mDeepSeries = deepSeries.substring(1);
       mBeforeSeries = beforeSeries.substring(1);
+      mUnknownSeries = unknownSeries.substring(1);
    }
 
    public String toTemporalFormat(int clusterNum) {
@@ -787,13 +802,17 @@ public class Cluster {
       Map<Integer, Map<Integer, String>> laterMap = new LinkedHashMap<Integer, Map<Integer, String>>();
       Map<Integer, Map<Integer, String>> deepMap = new LinkedHashMap<Integer, Map<Integer, String>>();
       Map<Integer, Map<Integer, String>> beforeMap = new LinkedHashMap<Integer, Map<Integer, String>>();
+      Map<Integer, Map<Integer, String>> unknownMap = new LinkedHashMap<Integer, Map<Integer, String>>();
 
       for (Isolate sample : isolates) {
          Map<Integer, Map<Integer, String>> sampleMap = null;
 
          String sampleName = sample.getName();
-         //if isolate name is 'f14-1' then extract 14 as the day
-         int day = Integer.parseInt(sampleName.substring(dayNdx, sampleName.indexOf("-")));
+         if (sampleName.startsWith("sp")) {
+            return null;
+         }
+
+         int day = sample.getDay();
          //if isolate name is 'f14-1' then extract 1 as the isolateNum
          int isolateNum = Integer.parseInt(sampleName.substring(sampleName.indexOf("-") + 1, sampleName.length()));
          String marker = ", X";
@@ -820,6 +839,10 @@ public class Cluster {
                sampleMap = beforeMap;
                marker = ", B";
                break;
+            case UNKNOWN:
+               sampleMap = unknownMap;
+               marker = ", O";
+               break;
          }
 
          if (!sampleMap.containsKey(isolateNum)) {
@@ -837,8 +860,11 @@ public class Cluster {
          tickMap.put(day, marker);
       }
 
-      tempOutput += String.format("%s\n%s\n%s%s%s%s%s\n", "cluster_" + clusterNum,
-       diagramHeader, toIsolateTable(fecalMap), toIsolateTable(immMap), toIsolateTable(laterMap), toIsolateTable(deepMap), toIsolateTable(beforeMap));
+      tempOutput += String.format("%s\n%s\n%s%s%s%s%s%s\n",
+       "cluster_" + clusterNum, diagramHeader,
+       toIsolateTable(fecalMap), toIsolateTable(immMap),
+       toIsolateTable(laterMap), toIsolateTable(deepMap),
+       toIsolateTable(beforeMap), toIsolateTable(unknownMap));
 
       /*
        * auto generate some partially completed g.raphael bar chart code

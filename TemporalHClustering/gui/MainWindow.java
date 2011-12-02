@@ -35,7 +35,7 @@ public class MainWindow extends JFrame {
       //JMenu pyroMenu = new JMenu("PyroSequencing");
 
       //width is loosely calculated as number of characters in JMenu * 10
-      setSize(new Dimension(250, 300));
+      setSize(new Dimension(500, 600));
        
       //Items that will go into the File menu
       JMenuItem importFile = new JMenuItem("View dendogram file");

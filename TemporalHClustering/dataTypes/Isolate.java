@@ -14,10 +14,10 @@ import java.util.LinkedList;
 //code.
 public class Isolate {
    private String mIsolateName;
-   private String mTechnician;
-   private SampleMethod mGroup;
+   private String mTechnician = null;
+   private SampleMethod mGroup = null;
    private List<File> mFileListing_16_23, mFileListing_23_5;
-   private int day;
+   private int day = -1;
    private boolean isClustered;
    //private Map<Isolate, Double> mCorrMap; //mapping from isolateName to correlation
    private static int TECH_NDX = 0, GRP_NDX = 1, DAY_NDX = 2;
@@ -38,14 +38,18 @@ public class Isolate {
 
 
       mIsolateName = name;
-      mTechnician = String.valueOf(name.charAt(TECH_NDX));
-      mGroup = SampleMethod.getMethod(mIsolateName.charAt(GRP_NDX));
-      /*
-       * grabs the integer that is between the method encoding (f | i | l) and
-       * the '-' character, this is necessary since the day the sample was taken
-       * is of variable length (depending on the sampling time frame)
-       */
-      day = Integer.parseInt(mIsolateName.substring(DAY_NDX, mIsolateName.indexOf('-')));
+
+      if (mIsolateName.startsWith("Sp")) {
+         mTechnician = String.valueOf(name.charAt(TECH_NDX));
+         mGroup = SampleMethod.getMethod(mIsolateName.charAt(GRP_NDX));
+         /*
+          * grabs the integer that is between the method encoding (f | i | l) and
+          * the '-' character, this is necessary since the day the sample was taken
+          * is of variable length (depending on the sampling time frame)
+          */
+         day = Integer.parseInt(mIsolateName.substring(DAY_NDX, mIsolateName.indexOf('-')));
+      }
+
       //mCorrMap = null;
       
       mFileListing_16_23 = new LinkedList<File>();
@@ -68,14 +72,23 @@ public class Isolate {
    }
 
    public String getTechnician() {
+      if (mTechnician == null) {
+         return "$";
+      }
       return mTechnician;
    }
 
    public SampleMethod getSampleMethod() {
+      if (mGroup == null) {
+         return SampleMethod.UNKNOWN;
+      }
       return mGroup;
    }
 
    public int getDay() {
+      if (day < 0) {
+         return 1;
+      }
       return day;
    }
 

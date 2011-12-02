@@ -198,7 +198,7 @@ public class IsolateFileParser {
                   if (isolateCorr.getCorrelation() != null) {
                      //if (isolateCorr.getCorrelation() > mUpperThreshold) {
                      if (isolateCorr.getCorrelation() == 100) {
-                        System.out.printf("putting correlation between %s and %s (%.03f) into strong network\n", currentIsolate, otherIsolate, isolateCorr.getCorrelation());
+                        //System.out.printf("putting correlation between %s and %s (%.03f) into strong network\n", currentIsolate, otherIsolate, isolateCorr.getCorrelation());
                         isolateNetworks.get(Connectivity.STRONG).addCorrelation(isolateCorr);
                      }
                      else {
@@ -258,6 +258,8 @@ public class IsolateFileParser {
             catch(NumberFormatException err) {
                System.err.println("invalid double value for isolate " +
                 currentIsolate.getName());
+               System.err.println("found value " + tuplesString[colNdx] +
+                "for region " + mRegion + "in column " + (colNdx + 1));
                System.exit(1);
             }
          }

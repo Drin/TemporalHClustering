@@ -17,9 +17,10 @@ public class TreeNode {
    private final String LATER_KEY = "later";
    private final String DEEP_KEY = "deep";
    private final String BEFORE_KEY = "before";
+   private final String UNKNOWN_KEY = "unknown";
 
    private String mFecalSeries = "", mImmSeries = "", mLaterSeries = "",
-                  mDeepSeries = "", mBeforeSeries = "";
+                  mDeepSeries = "", mBeforeSeries = "", mUnknownSeries = "";
 
    public TreeNode() {
       isolateMap = new HashMap<String, List<Isolate>>();
@@ -65,6 +66,12 @@ public class TreeNode {
 
             isolateList = isolateMap.get(BEFORE_KEY);
             break;
+         case UNKNOWN:
+            if (!isolateMap.containsKey(UNKNOWN_KEY)) {
+               isolateMap.put(UNKNOWN_KEY, new ArrayList<Isolate>());
+            }
+
+            isolateList = isolateMap.get(UNKNOWN_KEY);
          default:
             System.err.println("unexpected sample type: " + isolate.getSampleMethod());
             System.exit(1);
@@ -128,6 +135,10 @@ public class TreeNode {
 
    public String getBeforeSeries() {
       return getSeriesCounts(BEFORE_KEY);
+   }
+
+   public String getUnknownSeries() {
+      return getSeriesCounts(UNKNOWN_KEY);
    }
 
    public List<Isolate> getIsolateList() {

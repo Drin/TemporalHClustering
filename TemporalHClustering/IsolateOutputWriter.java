@@ -26,7 +26,8 @@ public class IsolateOutputWriter {
       String outFileName = filePrefix + "_thresholdedClusters_" + thresholdValue + ".html";
       String chartFormat = "";
       
-      String fecalSeries = "", immSeries = "", laterSeries = "", deepSeries = "", beforeSeries = "";
+      String fecalSeries = "", immSeries = "", laterSeries = "",
+             deepSeries = "", beforeSeries = "", unknownSeries = "";
 
       int numCluster = 0;
       for (TreeNode treeNode : tree.getTree()) {
@@ -37,8 +38,11 @@ public class IsolateOutputWriter {
          laterSeries = treeNode.getLaterSeries();
          deepSeries = treeNode.getDeepSeries();
          beforeSeries = treeNode.getBeforeSeries();
+         unknownSeries = treeNode.getUnknownSeries();
 
-         graphCharts.add(newGraphChart(String.format("cluster%d", numCluster++), fecalSeries, immSeries, laterSeries, deepSeries, beforeSeries));
+         graphCharts.add(newGraphChart(String.format("cluster%d",
+          numCluster++), fecalSeries, immSeries, laterSeries,
+          deepSeries, beforeSeries, unknownSeries));
       }
 
       String htmlStr = buildChartHtml(graphContainers, buildChartJs(graphCharts));
@@ -63,7 +67,8 @@ public class IsolateOutputWriter {
       String outFileName = filePrefix + "_temporalCharts.html";
       String chartFormat = "";
       
-      String fecalSeries = "", immSeries = "", laterSeries = "", deepSeries = "", beforeSeries = "";
+      String fecalSeries = "", immSeries = "", laterSeries = "",
+             deepSeries = "", beforeSeries = "", unknownSeries = "";
 
       int numCluster = 0;
       for (ClusterDendogram clustDend : clustDends) {
@@ -75,8 +80,11 @@ public class IsolateOutputWriter {
          laterSeries = tmpClust.getLaterSeries();
          deepSeries = tmpClust.getDeepSeries();
          beforeSeries = tmpClust.getBeforeSeries();
+         unknownSeries = tmpClust.getUnknownSeries();
 
-         graphCharts.add(newGraphChart(String.format("cluster%d", numCluster++), fecalSeries, immSeries, laterSeries, deepSeries, beforeSeries));
+         graphCharts.add(newGraphChart(String.format("cluster%d",
+          numCluster++), fecalSeries, immSeries, laterSeries,
+          deepSeries, beforeSeries, unknownSeries));
       }
 
       String htmlStr = buildChartHtml(graphContainers, buildChartJs(graphCharts));
@@ -125,7 +133,9 @@ public class IsolateOutputWriter {
       return javascriptStr + "});";
    }
 
-   private static String newGraphChart(String clusterName, String fecalSeries, String immSeries, String laterSeries, String deepSeries, String beforeSeries) {
+   private static String newGraphChart(String clusterName,
+    String fecalSeries, String immSeries, String laterSeries,
+    String deepSeries, String beforeSeries, String unknownSeries) {
       return String.format(
          "var %s = new Highcharts.Chart({\n" +
             "chart: {\n" +
@@ -196,8 +206,12 @@ public class IsolateOutputWriter {
             "}, {\n" +
                "name: 'Before',\n" +
                "data: [%s]\n" +
+            "}, {\n" +
+               "name: 'Other',\n" +
+               "data: [%s]\n" +
             "}]\n" +
-         "});", clusterName, clusterName, clusterName, fecalSeries, immSeries, laterSeries, deepSeries, beforeSeries);
+         "});", clusterName, clusterName, clusterName, fecalSeries,
+      immSeries, laterSeries, deepSeries, beforeSeries, unknownSeries);
    }
 
    public static void outputTemporalClusters(List<ClusterDendogram> clustDends, String filePrefix) {
@@ -208,7 +222,12 @@ public class IsolateOutputWriter {
       for (ClusterDendogram clustDend : clustDends) {
          clusterNum++;
          //the new lines are to obviate the separation between clusters
-         cytoFormat += clustDend.getCluster().toTemporalFormat(clusterNum);
+         String tmpFormat = clustDend.getCluster().toTemporalFormat(clusterNum);
+
+         if (tmpFormat != null) {
+            cytoFormat += tmpFormat;
+         }
+         else return;
       }
 
       try {

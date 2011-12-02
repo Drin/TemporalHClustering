@@ -17,7 +17,12 @@ public enum SampleMethod {
     * fecal and immediate are closest to each other
     * while later is closest only to immediate
     */
-   FECAL('f', 0), IMM('i', 1), LATER('l', 3), DEEP('d', 7), BEFORE('b', -2);
+   FECAL('f', 0),
+   IMM('i', 1),
+   LATER('l', 3),
+   DEEP('d', 7),
+   BEFORE('b', -2),
+   UNKNOWN('!', -99);
 
    private char mEncoding;
    private int mValue;
@@ -51,6 +56,7 @@ public enum SampleMethod {
             return "Deep";
          case 'b':
             return "Before";
+         case '!':
          default:
             return "Unknown";
       }
@@ -68,6 +74,8 @@ public enum SampleMethod {
             return DEEP;
          case 'b':
             return BEFORE;
+         case '!':
+            return UNKNOWN;
          default:
             System.err.println("Invalid Isolate encoding: " + encoding);
             return null;

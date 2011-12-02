@@ -124,7 +124,7 @@ public class HClustering {
             parser.extractData(isolateNetworks, partialCorrelations, dataFileMap.size());
          }
 
-         System.out.println("strong Network size: " + isolateNetworks.get(Connectivity.STRONG).size());
+         //System.out.println("strong Network size: " + isolateNetworks.get(Connectivity.STRONG).size());
       }
 
       //each point is a cluster, and we will combine two clusters in each iteration
@@ -193,11 +193,11 @@ public class HClustering {
          technicianIsolateMap = similarityMatrix.getIsolateMap();
 
          for (String technician : technicianIsolateMap.keySet()) {
-            System.out.printf("clustering technician %s's dataset...\n", technician);
+            //System.out.printf("clustering technician %s's dataset...\n", technician);
             Map<Integer, List<Isolate>> isolateMap = technicianIsolateMap.get(technician);
 
             for (int sampleDay : isolateMap.keySet()) {
-               System.out.printf("clustering day %d...\n", sampleDay);
+               //System.out.printf("clustering day %d...\n", sampleDay);
                //Cluster the list of isolates in this day
                List<ClusterDendogram> currClusters = clusterIsolateList(similarityMatrix,
                 isolateMap.get(sampleDay), type);
@@ -243,7 +243,7 @@ public class HClustering {
             Map<Integer, List<Isolate>> isolateMap = technicianIsolateMap.get(technician);
 
             for (int sampleDay : isolateMap.keySet()) {
-               System.out.printf("clustering day %d...\n", sampleDay);
+               //System.out.printf("clustering day %d...\n", sampleDay);
 
                for (Isolate isolate : isolateMap.get(sampleDay)) {
                   //clusters = clusterWeakIsolates(similarityMatrix, clusters, isolate, type);
@@ -329,6 +329,7 @@ public class HClustering {
       //represent later samples
       List<ClusterDendogram> clusterL = new ArrayList<ClusterDendogram>();
       List<ClusterDendogram> clusterD = new ArrayList<ClusterDendogram>();
+      List<ClusterDendogram> clusterU = new ArrayList<ClusterDendogram>();
 
       //clusters resulting from clustering the above clusters will be placed in
       //clusters and this will prevent me from having to refactor the rest of this
@@ -355,6 +356,9 @@ public class HClustering {
             case BEFORE:
                clusterB.add(new ClusterDendogram(newCluster, newDendogram));
                break;
+            case UNKNOWN:
+               clusterU.add(new ClusterDendogram(newCluster, newDendogram));
+               break;
             default:
                System.err.println("serious error here");
                break;
@@ -368,6 +372,7 @@ public class HClustering {
       clusterL = clusterGroup(clusterL, type);
       clusterD = clusterGroup(clusterD, type);
       clusterB = clusterGroup(clusterB, type);
+      clusterU = clusterGroup(clusterU, type);
 
 
       //cluster each group together:
@@ -388,6 +393,9 @@ public class HClustering {
       clusters = clusterGroup(clusters, type);
 
       clusters.addAll(clusterB);
+      clusters = clusterGroup(clusters, type);
+
+      clusters.addAll(clusterU);
       clusters = clusterGroup(clusters, type);
 
       //clusters within all the day's clusters
@@ -465,9 +473,9 @@ public class HClustering {
          if (newClusters.size() != clusters.size()) {
             hasChanged = true;
             clusters = newClusters;
-            System.out.println("recalculating cluster distances...");
+            //System.out.println("recalculating cluster distances...");
             recalculateClusterDistances(clusters, type);
-            System.out.println("finished recalculating cluster distances...");
+            //System.out.println("finished recalculating cluster distances...");
          }
 
          //reset various variables
@@ -586,7 +594,7 @@ public class HClustering {
             Cluster clusterOne = clusters.get((int) minNdx.getX()).getCluster();
             Cluster clusterTwo = clusters.get((int) minNdx.getY()).getCluster();
 
-            System.out.printf("combining clusters:\n===\n\n%s\n and \n%s\nwith maxSimiliarty: %.03f\n\n===", clusterOne, clusterTwo, correlation);
+            //System.out.printf("combining clusters:\n===\n\n%s\n and \n%s\nwith maxSimiliarty: %.03f\n\n===", clusterOne, clusterTwo, correlation);
 
             Cluster combinedCluster = new Cluster(clusterOne.unionWith(clusterTwo));
 
