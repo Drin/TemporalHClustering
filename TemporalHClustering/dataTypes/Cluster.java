@@ -21,19 +21,21 @@ import java.util.LinkedHashMap;
 public class Cluster {
    private List<Isolate> isolates;
    private double sumSquaredError, minDist, maxDist, avgDist;
-   private IsolateSimilarityMatrix similarityMatrix;
+   private IsolateSimilarityMatrix similarityMatrix, originalMatrix;
 
    private String mFecalSeries = null, mImmSeries = null,
     mLaterSeries = null, mDeepSeries = null, mBeforeSeries = null;
 
    public Cluster(IsolateSimilarityMatrix matrix) {
       similarityMatrix = matrix;
+      originalMatrix = new IsolateSimilarityMatrix(matrix);
       isolates = new ArrayList<Isolate>();
       //sumSquaredError = 0;
    }
 
    public Cluster(IsolateSimilarityMatrix matrix, Isolate firstIsolate) {
       similarityMatrix = matrix;
+      originalMatrix = new IsolateSimilarityMatrix(matrix);
       isolates = new ArrayList<Isolate>();
       isolates.add(firstIsolate);
       firstIsolate.setClustered(true);
@@ -42,6 +44,7 @@ public class Cluster {
 
    public Cluster(Cluster copyCluster) {
       similarityMatrix = copyCluster.similarityMatrix;
+      originalMatrix = new IsolateSimilarityMatrix(similarityMatrix);
       isolates = new ArrayList<Isolate>();
 
       for (Isolate sample : copyCluster.isolates) {
@@ -83,14 +86,33 @@ public class Cluster {
    */
 
    public double minDist() {
-      double min = 0;
+      double min = -1;
 
+      //System.out.printf("originalMatrix: \n\n\n%s\n\n\n", originalMatrix);
+
+      System.out.printf("searching for maximum similarity...\n");
       for (int sampleOne = 0; sampleOne < isolates.size(); sampleOne++) {
-         for (int sampleTwo = sampleOne + 1; sampleTwo < isolates.size(); sampleTwo++) {
+         for (int sampleTwo = 0; sampleTwo < isolates.size(); sampleTwo++) {
             Isolate isolateOne = isolates.get(sampleOne);
             Isolate isolateTwo = isolates.get(sampleTwo);
 
-            double correlation = similarityMatrix.getCorrelationVal(isolateOne, isolateTwo);
+            double correlation = originalMatrix.getCorrelationVal(isolateOne, isolateTwo);
+
+            if (correlation == 0) {
+               correlation = originalMatrix.getCorrelationVal(isolateTwo, isolateOne);
+               /*
+               System.out.printf("%%%%%%%%%%\nrecalculated correlation between isolate '%s' and '%s' is '%.04f'\n" +
+                "%%%%%%%%%%\n", isolateOne, isolateTwo, correlation);
+                */
+            }
+
+            else {
+               /*
+               System.out.printf("%%%%%%%%%%\ncorrelation between isolate '%s' and '%s' is '%.04f'\n" +
+                "%%%%%%%%%%\n", isolateOne, isolateTwo, correlation);
+               */
+            }
+
             min = Math.max(min, correlation);
          }
       }
@@ -98,18 +120,29 @@ public class Cluster {
       return min;
    }
 
-   public double maxDist() {
+   public double maxDist(boolean acceptZeroCorr) {
       double max = Double.MAX_VALUE;
 
       for (int sampleOne = 0; sampleOne < isolates.size(); sampleOne++) {
-         for (int sampleTwo = sampleOne + 1; sampleTwo < isolates.size(); sampleTwo++) {
+         for (int sampleTwo = 0; sampleTwo < isolates.size(); sampleTwo++) {
             Isolate isolateOne = isolates.get(sampleOne);
             Isolate isolateTwo = isolates.get(sampleTwo);
 
-            double correlation = similarityMatrix.getCorrelationVal(isolateOne, isolateTwo);
-            max = Math.min(max, correlation);
+            double correlation = originalMatrix.getCorrelationVal(isolateOne, isolateTwo);
+
+            if (correlation == 0) {
+               correlation = originalMatrix.getCorrelationVal(isolateTwo, isolateOne);
+            }
+
+            double tmp = Math.min(max, correlation);
+            if (acceptZeroCorr || tmp > 0) {
+               max = Math.min(tmp, max);
+            }
          }
       }
+
+      if (max == Double.MAX_VALUE)
+         return -1;
 
       return max;
    }
@@ -122,7 +155,12 @@ public class Cluster {
             Isolate isolateOne = isolates.get(sampleOne);
             Isolate isolateTwo = isolates.get(sampleTwo);
 
-            double correlation = similarityMatrix.getCorrelationVal(isolateOne, isolateTwo);
+            double correlation = originalMatrix.getCorrelationVal(isolateOne, isolateTwo);
+
+            if (correlation == 0) {
+               correlation = originalMatrix.getCorrelationVal(isolateTwo, isolateOne);
+            }
+
             total += correlation;
             count++;
          }

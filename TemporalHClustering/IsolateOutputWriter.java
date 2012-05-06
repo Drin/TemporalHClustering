@@ -333,6 +333,12 @@ public class IsolateOutputWriter {
       }
    }
 
+   public static String getClusterStatistics(Cluster clust) {
+      return String.format("Min Similarity: (Non-Zero min), Max Similarity:, Avg Similarity:\n" +
+       ", %.04f (%.04f), %.04f, %.04f\n", clust.maxDist(true), clust.maxDist(false),
+       clust.minDist(), clust.avgDist());
+   }
+
    public static void outputClusters(List<ClusterDendogram> clustDends,
     String outFileDir, String outputFileName) {
       BufferedWriter xmlWriter = null, isolateWriter = null;
@@ -349,7 +355,8 @@ public class IsolateOutputWriter {
       int clusterNum = 0;
       for (ClusterDendogram clustDend : clustDends) {
          xmlOutput += clustDend.getDendogram().getXML() + "\n";
-         isolateOutput += "Cluster " + (clusterNum++) + ",\n";
+         isolateOutput += "Cluster " + (clusterNum++) + ",";
+         isolateOutput += getClusterStatistics(clustDend.getCluster());
 
          for (Isolate isolate : clustDend.getCluster().getIsolates()) {
             isolateOutput += ",\t" + isolate + "\n";

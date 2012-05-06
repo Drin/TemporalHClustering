@@ -23,6 +23,10 @@ public class IsolateCorrelation {
       mCorrelation_23_5 = null;
    }
 
+   public String toString() {
+      return String.format("16-23: %.04f, 23-5: %.04f", mCorrelation_16_23, mCorrelation_23_5);
+   }
+
    public Double compareTo(IsolateCorrelation otherCorrelation) {
       Double myCorrelationVal = getCorrelation();
       Double otherCorrelationVal = otherCorrelation.getCorrelation();
@@ -114,8 +118,15 @@ public class IsolateCorrelation {
 
    public boolean isDifferent() {
       try {
-         if (mCorrelation_16_23 <= mLowerThreshold_16_23 || mCorrelation_23_5 <= mLowerThreshold_23_5) {
-            return true;
+         if (mCorrelation_16_23 != null && mCorrelation_23_5 != null) {
+            if (mCorrelation_16_23 <= mLowerThreshold_16_23 || mCorrelation_23_5 <= mLowerThreshold_23_5) {
+               return true;
+            }
+         }
+         else if (mCorrelation_23_5 != null) {
+            if (mCorrelation_23_5 <= mLowerThreshold_23_5) {
+               return true;
+            }
          }
       }
       catch (NullPointerException nullErr) {

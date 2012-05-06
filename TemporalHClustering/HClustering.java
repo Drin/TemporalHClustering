@@ -627,10 +627,8 @@ public class HClustering {
             Cluster currClust = clusters.get(clustNdx).getCluster();
             double clustDist = newCluster.corrDistance(currClust, type);
 
-            /*
             System.out.printf("\n\nnewCluster: \n\t%s\n\ncurrClust:\n\t%s\n\n", newCluster, currClust);
             System.out.printf("clustDist: %.03f\n", clustDist);
-            */
 
             //if (clustDist < minDist && clustDist < mLowerThreshold) {
             //System.out.println("cluster to date ward's distance: " + clustDist);
@@ -642,9 +640,11 @@ public class HClustering {
 
             //if (clustDist > maxSimilarity && clustDist > mThresholding) {
             if (mClusterPreference.equals("structure")) {
+               System.out.printf("is newCluster different than currClust? %s\n", newCluster.isDifferent(currClust));
+
                if (clustDist > maxSimilarity && !newCluster.isDifferent(currClust)) {
                   maxSimilarity = clustDist;
-                  //System.out.printf("maxSimilarity: %.03f\n", maxSimilarity);
+                  System.out.printf("maxSimilarity: %.03f\n", maxSimilarity);
                   closeClusterNdx = clustNdx;
                }
             }

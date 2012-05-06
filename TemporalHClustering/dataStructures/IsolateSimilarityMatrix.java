@@ -26,6 +26,29 @@ public class IsolateSimilarityMatrix {
       mIsolateMapping = new HashMap<String, Map<Integer, List<Isolate>>>();
    }
 
+   public IsolateSimilarityMatrix(IsolateSimilarityMatrix copyMatrix) {
+      super();
+
+      mSimilarityMatrix = new HashMap<Isolate, Map<Isolate, IsolateCorrelation>>
+       (copyMatrix.getSimilarityMatrix());
+      for (Isolate isoKey : copyMatrix.mSimilarityMatrix.keySet()) {
+         mSimilarityMatrix.put(isoKey, new HashMap<Isolate, IsolateCorrelation>
+          (copyMatrix.mSimilarityMatrix.get(isoKey)));
+      }
+
+      mIsolateMapping = new HashMap<String, Map<Integer, List<Isolate>>>
+       (copyMatrix.getIsolateMap());
+      for (String key: copyMatrix.mIsolateMapping.keySet()) {
+         mIsolateMapping.put(key, new HashMap<Integer, List<Isolate>>
+          (copyMatrix.mIsolateMapping.get(key)));
+
+         for (Integer intKey : copyMatrix.mIsolateMapping.get(key).keySet()) {
+            mIsolateMapping.get(key).put(intKey, new ArrayList<Isolate>(
+             copyMatrix.mIsolateMapping.get(key).get(intKey)));
+         }
+      }
+   }
+
    public int size() {
       return mSimilarityMatrix.size();
    }
@@ -327,7 +350,22 @@ public class IsolateSimilarityMatrix {
       */
    }
 
-   //TODO add toString()
+   public String toString() {
+      String printStr = "similarity matrix:\n";
+
+      for (Isolate isoKey_A : mSimilarityMatrix.keySet()) {
+         Map<Isolate, IsolateCorrelation> simMap = mSimilarityMatrix.get(isoKey_A);
+
+         for (Isolate isoKey_B : simMap.keySet()) {
+            IsolateCorrelation corr = simMap.get(isoKey_B);
+
+            printStr += String.format("\t'%s' -> '%s' : '%s'\n", isoKey_A, isoKey_B, corr);
+         }
+      }
+
+      return printStr;
+   }
+
    private enum SimilarityScore {
       //MATCH(7), PROBABLE(3), UNPROBABLE(1), UNMATCH(0);
       MATCH(5), PROBABLE(3), UNPROBABLE(0), UNMATCH(0);
